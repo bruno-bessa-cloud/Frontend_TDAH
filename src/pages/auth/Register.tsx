@@ -1,33 +1,33 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import toast, { Toaster } from 'react-hot-toast'
-import { useForm } from 'react-hook-form'
-import { ArrowLeft, UserPlus } from 'lucide-react'
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { ArrowLeft, UserPlus } from 'lucide-react';
 
 type RegisterFormValues = {
-  name: string
-  email: string
-  gender: 'male' | 'female' | 'other' | 'prefer-not-to-say'
-  idealSleepHours: string
-  wakeUpTime: string
-  password: string
-  confirmPassword: string
-}
+  name: string;
+  email: string;
+  gender: 'male' | 'female' | 'other' | 'prefer-not-to-say';
+  idealSleepHours: string;
+  wakeUpTime: string;
+  password: string;
+  confirmPassword: string;
+};
 
 export default function Register() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const { register, handleSubmit, watch, formState } = useForm<RegisterFormValues>({
-    mode: 'onTouched'
-  })
-  const { errors } = formState
-  const [isLoading, setIsLoading] = useState(false)
+    mode: 'onTouched',
+  });
+  const { errors } = formState;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const password = watch('password')
+  const password = watch('password');
 
   const onSubmit = async (data: RegisterFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     toast.success('Conta criada com sucesso! Bem-vindo!', {
       duration: 4000,
@@ -35,30 +35,33 @@ export default function Register() {
         background: '#00A651',
         color: '#fff',
       },
-    })
+    });
 
     console.log('Registration successful with:', {
       ...data,
       password: '***',
-      confirmPassword: '***'
-    })
+      confirmPassword: '***',
+    });
 
-    localStorage.setItem('mock_new_user', JSON.stringify({
-      name: data.name,
-      email: data.email,
-      gender: data.gender,
-      idealSleepHours: data.idealSleepHours,
-      wakeUpTime: data.wakeUpTime,
-      createdAt: new Date().toISOString()
-    }))
+    localStorage.setItem(
+      'mock_new_user',
+      JSON.stringify({
+        name: data.name,
+        email: data.email,
+        gender: data.gender,
+        idealSleepHours: data.idealSleepHours,
+        wakeUpTime: data.wakeUpTime,
+        createdAt: new Date().toISOString(),
+      })
+    );
 
     setTimeout(() => {
-      console.log('Redirecting to /login')
-      navigate('/login')
-    }, 2000)
+      console.log('Redirecting to /login');
+      navigate('/login');
+    }, 2000);
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-8">
@@ -80,9 +83,7 @@ export default function Register() {
             </div>
           </div>
 
-          <h1 className="text-5xl font-bold text-[#00A651] mb-2">
-            Vamos criar uma conta :)
-          </h1>
+          <h1 className="text-5xl font-bold text-[#00A651] mb-2">Vamos criar uma conta :)</h1>
           <p className="text-gray-600 text-lg">
             Preencha os campos abaixo para começar sua jornada!
           </p>
@@ -91,10 +92,7 @@ export default function Register() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label
-                htmlFor="name"
-                className="block text-base font-semibold text-gray-700 mb-2"
-              >
+              <label htmlFor="name" className="block text-base font-semibold text-gray-700 mb-2">
                 Nome completo *
               </label>
               <input
@@ -105,8 +103,8 @@ export default function Register() {
                   required: 'Por favor, digite seu nome',
                   minLength: {
                     value: 2,
-                    message: 'O nome deve ter pelo menos 2 caracteres'
-                  }
+                    message: 'O nome deve ter pelo menos 2 caracteres',
+                  },
                 })}
                 className={`
                   w-full px-4 py-3 text-base
@@ -126,10 +124,7 @@ export default function Register() {
             </div>
 
             <div>
-              <label
-                htmlFor="email"
-                className="block text-base font-semibold text-gray-700 mb-2"
-              >
+              <label htmlFor="email" className="block text-base font-semibold text-gray-700 mb-2">
                 Email *
               </label>
               <input
@@ -140,7 +135,7 @@ export default function Register() {
                   required: 'Por favor, digite seu email',
                   pattern: {
                     value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
-                    message: 'Digite um email válido'
+                    message: 'Digite um email válido',
                   },
                 })}
                 className={`
@@ -162,16 +157,13 @@ export default function Register() {
           </div>
 
           <div>
-            <label
-              htmlFor="gender"
-              className="block text-base font-semibold text-gray-700 mb-2"
-            >
+            <label htmlFor="gender" className="block text-base font-semibold text-gray-700 mb-2">
               Como você se identifica? *
             </label>
             <select
               id="gender"
               {...register('gender', {
-                required: 'Por favor, selecione uma opção'
+                required: 'Por favor, selecione uma opção',
               })}
               className={`
                 w-full px-4 py-3 text-base
@@ -206,7 +198,7 @@ export default function Register() {
               <select
                 id="idealSleepHours"
                 {...register('idealSleepHours', {
-                  required: 'Por favor, selecione suas horas de sono'
+                  required: 'Por favor, selecione suas horas de sono',
                 })}
                 className={`
                   w-full px-4 py-3 text-base
@@ -243,7 +235,7 @@ export default function Register() {
                 id="wakeUpTime"
                 type="time"
                 {...register('wakeUpTime', {
-                  required: 'Por favor, selecione o horário'
+                  required: 'Por favor, selecione o horário',
                 })}
                 className={`
                   w-full px-4 py-3 text-base
@@ -278,8 +270,8 @@ export default function Register() {
                   required: 'Por favor, crie uma senha',
                   minLength: {
                     value: 6,
-                    message: 'A senha deve ter pelo menos 6 caracteres'
-                  }
+                    message: 'A senha deve ter pelo menos 6 caracteres',
+                  },
                 })}
                 className={`
                   w-full px-4 py-3 text-base
@@ -311,8 +303,7 @@ export default function Register() {
                 autoComplete="new-password"
                 {...register('confirmPassword', {
                   required: 'Por favor, confirme sua senha',
-                  validate: (value) =>
-                    value === password || 'As senhas não coincidem'
+                  validate: (value) => value === password || 'As senhas não coincidem',
                 })}
                 className={`
                   w-full px-4 py-3 text-base
@@ -338,9 +329,10 @@ export default function Register() {
             className={`
               w-full py-4 px-6 text-lg font-bold rounded-xl
               transition-all duration-200 transform
-              ${isLoading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[#F5A623] text-white hover:bg-[#e09515] hover:scale-[1.02] active:scale-[0.98]'
+              ${
+                isLoading
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#F5A623] text-white hover:bg-[#e09515] hover:scale-[1.02] active:scale-[0.98]'
               }
               shadow-lg hover:shadow-xl
             `}
@@ -371,9 +363,7 @@ export default function Register() {
           </button>
 
           <div className="text-center space-y-2 pt-4">
-            <p className="text-gray-600">
-              Já tem uma conta?
-            </p>
+            <p className="text-gray-600">Já tem uma conta?</p>
             <Link
               to="/login"
               className="inline-block text-lg font-semibold text-[#00A651] hover:text-[#008a44] transition-colors"
@@ -385,13 +375,16 @@ export default function Register() {
 
         <div className="mt-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
           <p className="text-xs text-blue-700 text-center">
-            <strong>Modo de Desenvolvimento:</strong><br />
-            Esta página está simulando o comportamento de registro.<br />
-            Nenhuma conexão real com API está sendo feita.<br />
+            <strong>Modo de Desenvolvimento:</strong>
+            <br />
+            Esta página está simulando o comportamento de registro.
+            <br />
+            Nenhuma conexão real com API está sendo feita.
+            <br />
             Após o registro simulado, você será redirecionado para a página de login.
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,3 @@
-cat > jsconfig.json << 'EOF'
 {
   "compilerOptions": {
     "baseUrl": ".",
@@ -8,4 +7,3 @@ cat > jsconfig.json << 'EOF'
   },
   "include": ["src"]
 }
-EOF

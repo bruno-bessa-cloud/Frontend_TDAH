@@ -1,78 +1,75 @@
-import { useState } from "react"
-import { useAuth } from "@/context/AuthContext"
-import { useTasks } from "@/hooks/useTasks"
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/services/api'
-import type { CreateTaskDto } from '@/types'
-import { Button } from "@/components/ui/button"
-import { TaskCard } from "@/components/tasks/TaskCard"
-import { TaskForm, type TaskFormData } from "@/components/tasks/TaskForm"
-import { TaskFiltersComponent, type TaskFilters } from "@/components/tasks/TaskFilters"
-import { Plus, LogOut, LayoutDashboard } from "lucide-react"
-import toast from "react-hot-toast"
-import type { Task, TaskStatus } from "@/types"
+import { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useTasks } from '@/hooks/useTasks';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/services/api';
+import type { CreateTaskDto } from '@/types';
+import { Button } from '@/components/ui/button';
+import { TaskCard } from '@/components/tasks/TaskCard';
+import { TaskForm, type TaskFormData } from '@/components/tasks/TaskForm';
+import { TaskFiltersComponent, type TaskFilters } from '@/components/tasks/TaskFilters';
+import { Plus, LogOut, LayoutDashboard } from 'lucide-react';
+import toast from 'react-hot-toast';
+import type { Task, TaskStatus } from '@/types';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
-  const { data: tasks, isLoading } = useTasks()
-  const queryClient = useQueryClient()
+  const { user, logout } = useAuth();
+  const { data: tasks, isLoading } = useTasks();
+  const queryClient = useQueryClient();
 
-  const [isMutating, setIsMutating] = useState(false)
+  const [isMutating, setIsMutating] = useState(false);
 
   // Strongly-typed mutation payloads
-  type NewTaskPayload = CreateTaskDto & { status?: TaskStatus }
-  type UpdateTaskVariables = { id: string; data: Partial<CreateTaskDto & { status?: TaskStatus }> }
+  type NewTaskPayload = CreateTaskDto & { status?: TaskStatus };
+  type UpdateTaskVariables = { id: string; data: Partial<CreateTaskDto & { status?: TaskStatus }> };
 
   const createTask = useMutation<Task, Error, NewTaskPayload>({
     mutationFn: async (payload: NewTaskPayload) => {
-      const res = await api.post<Task>('/tasks', payload)
-      return res.data
+      const res = await api.post<Task>('/tasks', payload);
+      return res.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  })
+  });
 
   const updateTask = useMutation<Task, Error, UpdateTaskVariables>({
     mutationFn: async ({ id, data }: UpdateTaskVariables) => {
-      const res = await api.put<Task>(`/tasks/${id}`, data)
-      return res.data
+      const res = await api.put<Task>(`/tasks/${id}`, data);
+      return res.data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  })
+  });
 
   const deleteTask = useMutation<void, Error, string>({
     mutationFn: async (taskId: string) => {
-      await api.delete(`/tasks/${taskId}`)
+      await api.delete(`/tasks/${taskId}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-  })
+  });
 
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filters, setFilters] = useState<TaskFilters>({
-    search: "",
-    category: "all",
-    priority: "all",
-    status: "all",
-  })
+    search: '',
+    category: 'all',
+    priority: 'all',
+    status: 'all',
+  });
 
   // Filtrar tarefas
   const filteredTasks = tasks?.filter((task) => {
     const matchesSearch =
-      filters.search === "" ||
+      filters.search === '' ||
       task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-      task.description?.toLowerCase().includes(filters.search.toLowerCase())
+      task.description?.toLowerCase().includes(filters.search.toLowerCase());
 
-    const matchesCategory =
-      filters.category === "all" || task.category === filters.category
+    const matchesCategory = filters.category === 'all' || task.category === filters.category;
 
-    const matchesPriority =
-      filters.priority === "all" || task.priority === filters.priority
+    const matchesPriority = filters.priority === 'all' || task.priority === filters.priority;
 
-    const matchesStatus =
-      filters.status === "all" || task.status === filters.status
+    const matchesStatus = filters.status === 'all' || task.status === filters.status;
 
-    return matchesSearch && matchesCategory && matchesPriority && matchesStatus
-  })
+    return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
+  });
 
   // Estatísticas
   const stats = {
@@ -80,89 +77,85 @@ export default function Dashboard() {
     pending: tasks?.filter((t) => t.status === 0).length || 0,
     inProgress: tasks?.filter((t) => t.status === 1).length || 0,
     completed: tasks?.filter((t) => t.status === 2).length || 0,
-  }
+  };
 
   const handleCreateTask = async (data: TaskFormData) => {
     try {
-      setIsMutating(true)
+      setIsMutating(true);
       await createTask.mutateAsync({
         ...data,
         status: 0, // Pendente
         deadline: new Date(data.deadline).toISOString(),
-      })
-      toast.success("Tarefa criada com sucesso!")
+      });
+      toast.success('Tarefa criada com sucesso!');
     } catch (error) {
-      toast.error("Erro ao criar tarefa")
+      toast.error('Erro ao criar tarefa');
+    } finally {
+      setIsMutating(false);
     }
-    finally {
-      setIsMutating(false)
-    }
-  }
+  };
 
   const handleUpdateTask = async (data: TaskFormData) => {
-    if (!editingTask) return
+    if (!editingTask) return;
 
     try {
-      setIsMutating(true)
+      setIsMutating(true);
       await updateTask.mutateAsync({
         id: editingTask.id,
         data: {
           ...data,
           deadline: new Date(data.deadline).toISOString(),
         },
-      })
-      toast.success("Tarefa atualizada!")
-      setEditingTask(null)
+      });
+      toast.success('Tarefa atualizada!');
+      setEditingTask(null);
     } catch (error) {
-      toast.error("Erro ao atualizar tarefa")
+      toast.error('Erro ao atualizar tarefa');
+    } finally {
+      setIsMutating(false);
     }
-    finally {
-      setIsMutating(false)
-    }
-  }
+  };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return
+    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
     try {
-      setIsMutating(true)
-      await deleteTask.mutateAsync(taskId)
-      toast.success("Tarefa excluída!")
+      setIsMutating(true);
+      await deleteTask.mutateAsync(taskId);
+      toast.success('Tarefa excluída!');
     } catch (error) {
-      toast.error("Erro ao excluir tarefa")
+      toast.error('Erro ao excluir tarefa');
+    } finally {
+      setIsMutating(false);
     }
-    finally {
-      setIsMutating(false)
-    }
-  }
+  };
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
-    const task = tasks?.find((t) => t.id === taskId)
-    if (!task) return
+    const task = tasks?.find((t) => t.id === taskId);
+    if (!task) return;
 
     try {
-      setIsMutating(true)
+      setIsMutating(true);
       await updateTask.mutateAsync({
         id: taskId,
         data: { ...task, status },
-      })
-      toast.success("Status atualizado!")
+      });
+      toast.success('Status atualizado!');
     } catch (error) {
-      toast.error("Erro ao atualizar status")
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setIsMutating(false);
     }
-    finally {
-      setIsMutating(false)
-    }
-  }
+  };
 
   const resetFilters = () => {
     setFilters({
-      search: "",
-      category: "all",
-      priority: "all",
-      status: "all",
-    })
-  }
+      search: '',
+      category: 'all',
+      priority: 'all',
+      status: 'all',
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
@@ -192,11 +185,7 @@ export default function Dashboard() {
                 <Plus className="w-4 h-4" />
                 Nova Tarefa
               </Button>
-              <Button
-                variant="outline"
-                onClick={logout}
-                className="gap-2"
-              >
+              <Button variant="outline" onClick={logout} className="gap-2">
                 <LogOut className="w-4 h-4" />
                 Sair
               </Button>
@@ -248,8 +237,8 @@ export default function Dashboard() {
                 key={task.id}
                 task={task}
                 onEdit={(task) => {
-                  setEditingTask(task)
-                  setIsFormOpen(true)
+                  setEditingTask(task);
+                  setIsFormOpen(true);
                 }}
                 onDelete={handleDeleteTask}
                 onStatusChange={handleStatusChange}
@@ -260,24 +249,30 @@ export default function Dashboard() {
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {filters.search || filters.category !== "all" || filters.priority !== "all" || filters.status !== "all"
-                ? "Nenhuma tarefa encontrada"
-                : "Nenhuma tarefa ainda"}
+              {filters.search ||
+              filters.category !== 'all' ||
+              filters.priority !== 'all' ||
+              filters.status !== 'all'
+                ? 'Nenhuma tarefa encontrada'
+                : 'Nenhuma tarefa ainda'}
             </h3>
             <p className="text-gray-600 mb-4">
-              {filters.search || filters.category !== "all" || filters.priority !== "all" || filters.status !== "all"
-                ? "Tente ajustar os filtros"
-                : "Comece criando sua primeira tarefa!"}
+              {filters.search ||
+              filters.category !== 'all' ||
+              filters.priority !== 'all' ||
+              filters.status !== 'all'
+                ? 'Tente ajustar os filtros'
+                : 'Comece criando sua primeira tarefa!'}
             </p>
-            {(!filters.search && filters.category === "all" && filters.priority === "all" && filters.status === "all") && (
-              <Button
-                onClick={() => setIsFormOpen(true)}
-                className="gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Criar Primeira Tarefa
-              </Button>
-            )}
+            {!filters.search &&
+              filters.category === 'all' &&
+              filters.priority === 'all' &&
+              filters.status === 'all' && (
+                <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Criar Primeira Tarefa
+                </Button>
+              )}
           </div>
         )}
       </main>
@@ -287,12 +282,12 @@ export default function Dashboard() {
         task={editingTask}
         open={isFormOpen}
         onClose={() => {
-          setIsFormOpen(false)
-          setEditingTask(null)
+          setIsFormOpen(false);
+          setEditingTask(null);
         }}
-    onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
-    isLoading={isMutating}
+        onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        isLoading={isMutating}
       />
     </div>
-  )
+  );
 }

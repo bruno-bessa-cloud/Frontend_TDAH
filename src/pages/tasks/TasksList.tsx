@@ -1,10 +1,10 @@
-import useTasks from '../../hooks/useTasks'
+import useTasks from '../../hooks/useTasks';
 
 export default function TasksList() {
-  const { data: tasks, isLoading, isError } = useTasks()
+  const { data: tasks, isLoading, isError } = useTasks();
 
-  if (isLoading) return <div className="p-6">Carregando tarefas...</div>
-  if (isError) return <div className="p-6">Erro ao carregar tarefas</div>
+  if (isLoading) return <div className="p-6">Carregando tarefas...</div>;
+  if (isError) return <div className="p-6">Erro ao carregar tarefas</div>;
 
   return (
     <div className="p-6">
@@ -14,7 +14,9 @@ export default function TasksList() {
           {tasks.map((task) => (
             <li key={task.id} className="p-4 border rounded">
               <div className="font-medium">{task.title}</div>
-              <div className="text-sm text-gray-600">Prazo: {new Date(task.deadline).toLocaleString()}</div>
+              <div className="text-sm text-gray-600">
+                Prazo: {new Date(task.deadline).toLocaleString()}
+              </div>
             </li>
           ))}
         </ul>
@@ -22,5 +24,5 @@ export default function TasksList() {
         <div>Nenhuma tarefa encontrada</div>
       )}
     </div>
-  )
+  );
 }
