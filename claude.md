@@ -46,15 +46,33 @@ Frontend_TDAH/
 │   ├── __tests__/              # Testes unitários e de integração
 │   │   └── AuthContext.test.tsx
 │   ├── components/             # Componentes reutilizáveis
-│   │   └── layout/
-│   │       └── ProtectedRoute.tsx
+│   │   ├── layout/
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── tasks/              # Componentes de tarefas
+│   │   │   ├── TaskCard.tsx
+│   │   │   ├── TaskForm.tsx
+│   │   │   └── TaskFilters.tsx
+│   │   └── ui/                 # Primitivas UI reutilizáveis (Radix UI)
+│   │       ├── button.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── select.tsx
+│   │       ├── card.tsx
+│   │       ├── textarea.tsx
+│   │       ├── badge.tsx
+│   │       ├── dialog.tsx
+│   │       ├── checkbox.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── switch.tsx
+│   │       └── tabs.tsx
 │   ├── context/                # Contextos React
 │   │   └── AuthContext.tsx
 │   ├── hooks/                  # Custom hooks
 │   │   ├── useAuthActions.ts
 │   │   └── useTasks.ts
 │   ├── lib/                    # Bibliotecas e configurações
-│   │   └── queryClient.ts
+│   │   ├── queryClient.ts
+│   │   └── utils.ts
 │   ├── pages/                  # Páginas da aplicação
 │   │   ├── auth/
 │   │   │   ├── Login.tsx
@@ -71,13 +89,20 @@ Frontend_TDAH/
 │   ├── types/                  # Definições de tipos TypeScript
 │   │   └── index.ts
 │   ├── App.tsx                 # Componente raiz
+│   ├── App.css                 # Estilos globais
+│   ├── index.css               # Estilos de reset
 │   ├── main.tsx                # Ponto de entrada
 │   └── setupTests.ts           # Configuração de testes
 ├── postcss.config.cjs          # Configuração PostCSS
 ├── tailwind.config.cjs         # Configuração Tailwind
 ├── tsconfig.json               # Configuração TypeScript
+├── tsconfig.app.json           # Configuração TypeScript para App
+├── tsconfig.node.json          # Configuração TypeScript para Node
 ├── vite.config.ts              # Configuração Vite
 ├── vitest.config.ts            # Configuração Vitest
+├── eslint.config.js            # Configuração ESLint
+├── components.json             # Configuração Shadcn/ui (se aplicável)
+├── claude.md                   # Esta documentação
 └── package.json                # Dependências e scripts
 ```
 
@@ -673,6 +698,78 @@ Para dúvidas, sugestões ou reportar bugs:
 
 ---
 
-**Última atualização:** 2026-01-08
+## Melhorias Implementadas (12 Janeiro 2026)
+
+### 1. Reorganização de Componentes UI
+
+**Antes:** 
+- Primitivas UI estavam localizadas em `@/components/ui` (diretório raiz).
+- Alias múltiplos e complexos no `tsconfig.json` e `vite.config.ts`.
+
+**Depois:**
+- Primitivas UI movidas para `src/components/ui` (sob a mesma estrutura de imports).
+- Alias unificado: `@/*` → `./src/*` em ambos `tsconfig.app.json` e `vite.config.ts`.
+- **Benefícies:** Estrutura mais clara, imports consistentes, menos complexidade de alias.
+
+### 2. Componentização de Tarefas
+
+**Criados/Consolidados:**
+- `src/components/tasks/TaskCard.tsx` - Renderização individual de tarefa com status, prioridade, categoria, prazos.
+- `src/components/tasks/TaskForm.tsx` - Formulário de criação/edição de tarefas com validação.
+- `src/components/tasks/TaskFilters.tsx` - Componente de filtros (busca, categoria, prioridade, status).
+
+**Removidos:**
+- Versões antigas com sufixo `-FINAL` foram eliminadas.
+
+### 3. Typings Reforçados
+
+**Mutations em `src/pages/dashboard/Dashboard.tsx`:**
+
+Antes:
+```typescript
+const createTask = useMutation<any, Error, any>({...})
+const updateTask = useMutation<any, Error, { id: string; data: any }>({...})
+const deleteTask = useMutation<any, Error, string>({...})
+```
+
+Depois:
+```typescript
+type NewTaskPayload = CreateTaskDto & { status?: TaskStatus }
+type UpdateTaskVariables = { id: string; data: Partial<CreateTaskDto & { status?: TaskStatus }> }
+
+const createTask = useMutation<Task, Error, NewTaskPayload>({...})
+const updateTask = useMutation<Task, Error, UpdateTaskVariables>({...})
+const deleteTask = useMutation<void, Error, string>({...})
+```
+
+**Benefício:** Type-safety completa em mutations, prevenção de erros em tempo de desenvolvimento.
+
+### 4. Primitivas UI Consolidadas
+
+Todos os componentes UI estão agora centralizados em `src/components/ui/`:
+- `button.tsx`, `input.tsx`, `label.tsx`, `select.tsx`
+- `card.tsx`, `textarea.tsx`, `badge.tsx`
+- `dialog.tsx`, `checkbox.tsx`, `dropdown-menu.tsx`, `switch.tsx`, `tabs.tsx`
+
+Baseados em Radix UI com Tailwind CSS para estilização.
+
+### 5. Callbacks e Handlers Tipados
+
+Callbacks em componentes de formulário agora possuem tipos explícitos:
+- `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...}`
+- `onValueChange={(value: string) => ...}`
+
+Isso eliminou erros TS7006 (implicit any) em modo strict.
+
+### Estado Atual da Build
+
+✅ **TypeScript Build:** Sem erros  
+✅ **Vite Build:** Sucesso (`dist/` gerado)  
+✅ **Dev Server:** Funcional em http://localhost:5174/ (port 5173 estava ocupado)  
+⚠️ **Node.js:** Versão 20.17.0 (recomendado ≥ 20.19 ou 22.x)
+
+---
+
+**Última atualização:** 2026-01-12
 **Versão:** 0.0.0
 **Mantido por:** Equipe Frontend TDAH
