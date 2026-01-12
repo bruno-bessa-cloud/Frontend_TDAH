@@ -136,8 +136,10 @@ export default function Dashboard() {
 
     try {
       setIsMutating(true);
+
       await updateTask.mutateAsync({
         id: taskId,
+
         data: { ...task, status },
       });
       toast.success('Status atualizado!');
