@@ -109,7 +109,7 @@ export default function Dashboard() {
       });
       toast.success('Tarefa atualizada!');
       setEditingTask(null);
-    } catch (error) {
+    } catch {
       toast.error('Erro ao atualizar tarefa');
     } finally {
       setIsMutating(false);
@@ -123,7 +123,7 @@ export default function Dashboard() {
       setIsMutating(true);
       await deleteTask.mutateAsync(taskId);
       toast.success('Tarefa excluída!');
-    } catch (error) {
+    } catch {
       toast.error('Erro ao excluir tarefa');
     } finally {
       setIsMutating(false);
@@ -141,7 +141,7 @@ export default function Dashboard() {
         data: { ...task, status },
       });
       toast.success('Status atualizado!');
-    } catch (error) {
+    } catch {
       toast.error('Erro ao atualizar status');
     } finally {
       setIsMutating(false);
