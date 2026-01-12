@@ -1,25 +1,25 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import toast, { Toaster } from 'react-hot-toast'
-import { useForm } from 'react-hook-form'
-import { Sun } from 'lucide-react'
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { Sun } from 'lucide-react';
 
 type LoginFormValues = {
-  email: string
-  password: string
-}
+  email: string;
+  password: string;
+};
 
 export default function Login() {
   const { register, handleSubmit, formState } = useForm<LoginFormValues>({
-    mode: 'onTouched'
-  })
-  const { errors } = formState
-  const [isLoading, setIsLoading] = useState(false)
+    mode: 'onTouched',
+  });
+  const { errors } = formState;
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast.success('Login realizado com sucesso! Bem-vindo de volta!', {
       duration: 3000,
@@ -27,18 +27,21 @@ export default function Login() {
         background: '#00A651',
         color: '#fff',
       },
-    })
+    });
 
-    console.log('Login successful with:', data)
+    console.log('Login successful with:', data);
 
-    localStorage.setItem('mock_user', JSON.stringify({
-      email: data.email,
-      name: 'Demo User',
-      loginAt: new Date().toISOString()
-    }))
+    localStorage.setItem(
+      'mock_user',
+      JSON.stringify({
+        email: data.email,
+        name: 'Demo User',
+        loginAt: new Date().toISOString(),
+      })
+    );
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4 py-12">
@@ -47,27 +50,16 @@ export default function Login() {
       <div className="w-full max-w-lg">
         <div className="flex items-center justify-center gap-4 mb-10">
           <div className="relative">
-            <Sun
-              size={100}
-              className="text-[#F5A623] fill-[#F5A623]"
-              strokeWidth={2.5}
-            />
+            <Sun size={100} className="text-[#F5A623] fill-[#F5A623]" strokeWidth={2.5} />
           </div>
-          <h1 className="text-7xl font-bold text-[#00A651]">
-            Login
-          </h1>
+          <h1 className="text-7xl font-bold text-[#00A651]">Login</h1>
         </div>
 
-        <p className="text-center text-gray-600 mb-10 text-lg">
-          Que bom te ver novamente!
-        </p>
+        <p className="text-center text-gray-600 mb-10 text-lg">Que bom te ver novamente!</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-base font-semibold text-gray-700 mb-2"
-            >
+            <label htmlFor="email" className="block text-base font-semibold text-gray-700 mb-2">
               Email
             </label>
             <input
@@ -78,7 +70,7 @@ export default function Login() {
                 required: 'Por favor, digite seu email',
                 pattern: {
                   value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
-                  message: 'Digite um email válido'
+                  message: 'Digite um email válido',
                 },
               })}
               className={`
@@ -99,10 +91,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-base font-semibold text-gray-700 mb-2"
-            >
+            <label htmlFor="password" className="block text-base font-semibold text-gray-700 mb-2">
               Senha
             </label>
             <input
@@ -113,8 +102,8 @@ export default function Login() {
                 required: 'Por favor, digite sua senha',
                 minLength: {
                   value: 6,
-                  message: 'A senha deve ter pelo menos 6 caracteres'
-                }
+                  message: 'A senha deve ter pelo menos 6 caracteres',
+                },
               })}
               className={`
                 w-full px-4 py-3 text-base
@@ -139,9 +128,10 @@ export default function Login() {
             className={`
               w-full py-4 px-6 text-lg font-bold rounded-xl
               transition-all duration-200 transform
-              ${isLoading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[#00A651] text-white hover:bg-[#008a44] hover:scale-[1.02] active:scale-[0.98]'
+              ${
+                isLoading
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#00A651] text-white hover:bg-[#008a44] hover:scale-[1.02] active:scale-[0.98]'
               }
               shadow-lg hover:shadow-xl
             `}
@@ -174,9 +164,11 @@ export default function Login() {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => toast('Funcionalidade em breve!', {
-                duration: 2000
-              })}
+              onClick={() =>
+                toast('Funcionalidade em breve!', {
+                  duration: 2000,
+                })
+              }
               className="text-sm text-gray-600 hover:text-[#00A651] transition-colors underline"
             >
               Esqueci minha senha
@@ -193,9 +185,7 @@ export default function Login() {
           </div>
 
           <div className="text-center space-y-2">
-            <p className="text-gray-600">
-              Não tem uma conta ainda?
-            </p>
+            <p className="text-gray-600">Não tem uma conta ainda?</p>
             <Link
               to="/register"
               className="inline-block text-lg font-semibold text-[#00A651] hover:text-[#008a44] transition-colors"
@@ -207,12 +197,14 @@ export default function Login() {
 
         <div className="mt-8 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
           <p className="text-xs text-blue-700 text-center">
-            <strong>Modo de Desenvolvimento:</strong><br />
-            Esta página está simulando o comportamento de login.<br />
+            <strong>Modo de Desenvolvimento:</strong>
+            <br />
+            Esta página está simulando o comportamento de login.
+            <br />
             Nenhuma conexão real com API está sendo feita.
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

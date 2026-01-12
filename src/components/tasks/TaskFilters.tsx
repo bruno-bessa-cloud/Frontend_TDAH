@@ -1,61 +1,61 @@
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Search, X } from "lucide-react"
-import type { TaskCategory, TaskPriority, TaskStatus } from "@/types"
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Search, X } from 'lucide-react';
+import type { TaskCategory, TaskPriority, TaskStatus } from '@/types';
 
 export interface TaskFilters {
-  search: string
-  category: TaskCategory | "all"
-  priority: TaskPriority | "all"
-  status: TaskStatus | "all"
+  search: string;
+  category: TaskCategory | 'all';
+  priority: TaskPriority | 'all';
+  status: TaskStatus | 'all';
 }
 
 interface TaskFiltersProps {
-  filters: TaskFilters
-  onFiltersChange: (filters: TaskFilters) => void
-  onReset: () => void
+  filters: TaskFilters;
+  onFiltersChange: (filters: TaskFilters) => void;
+  onReset: () => void;
 }
 
 const categories = [
-  { value: "all", label: "Todas as categorias", icon: "🌐" },
-  { value: "0", label: "Estudos", icon: "📚" },
-  { value: "1", label: "Trabalho", icon: "💼" },
-  { value: "2", label: "Casa", icon: "🏠" },
-  { value: "3", label: "Saúde", icon: "💚" },
-  { value: "4", label: "Lazer", icon: "🎮" },
-  { value: "5", label: "Outros", icon: "📌" },
-]
+  { value: 'all', label: 'Todas as categorias', icon: '🌐' },
+  { value: '0', label: 'Estudos', icon: '📚' },
+  { value: '1', label: 'Trabalho', icon: '💼' },
+  { value: '2', label: 'Casa', icon: '🏠' },
+  { value: '3', label: 'Saúde', icon: '💚' },
+  { value: '4', label: 'Lazer', icon: '🎮' },
+  { value: '5', label: 'Outros', icon: '📌' },
+];
 
 const priorities = [
-  { value: "all", label: "Todas as prioridades" },
-  { value: "0", label: "Baixa" },
-  { value: "1", label: "Média" },
-  { value: "2", label: "Alta" },
-]
+  { value: 'all', label: 'Todas as prioridades' },
+  { value: '0', label: 'Baixa' },
+  { value: '1', label: 'Média' },
+  { value: '2', label: 'Alta' },
+];
 
 const statuses = [
-  { value: "all", label: "Todos os status" },
-  { value: "0", label: "Pendente" },
-  { value: "1", label: "Em Progresso" },
-  { value: "2", label: "Concluída" },
-  { value: "3", label: "Cancelada" },
-]
+  { value: 'all', label: 'Todos os status' },
+  { value: '0', label: 'Pendente' },
+  { value: '1', label: 'Em Progresso' },
+  { value: '2', label: 'Concluída' },
+  { value: '3', label: 'Cancelada' },
+];
 
 export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: TaskFiltersProps) {
   const hasActiveFilters =
-    filters.search !== "" ||
-    filters.category !== "all" ||
-    filters.priority !== "all" ||
-    filters.status !== "all"
+    filters.search !== '' ||
+    filters.category !== 'all' ||
+    filters.priority !== 'all' ||
+    filters.status !== 'all';
 
   return (
     <Card className="shadow-sm">
@@ -80,7 +80,7 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
               />
               {filters.search && (
                 <button
-                  onClick={() => onFiltersChange({ ...filters, search: "" })}
+                  onClick={() => onFiltersChange({ ...filters, search: '' })}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
                 onValueChange={(value: string) =>
                   onFiltersChange({
                     ...filters,
-                    category: value === "all" ? "all" : (parseInt(value) as TaskCategory),
+                    category: value === 'all' ? 'all' : (parseInt(value) as TaskCategory),
                   })
                 }
               >
@@ -124,7 +124,7 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
                 onValueChange={(value: string) =>
                   onFiltersChange({
                     ...filters,
-                    priority: value === "all" ? "all" : (parseInt(value) as TaskPriority),
+                    priority: value === 'all' ? 'all' : (parseInt(value) as TaskPriority),
                   })
                 }
               >
@@ -149,7 +149,7 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
                 onValueChange={(value: string) =>
                   onFiltersChange({
                     ...filters,
-                    status: value === "all" ? "all" : (parseInt(value) as TaskStatus),
+                    status: value === 'all' ? 'all' : (parseInt(value) as TaskStatus),
                   })
                 }
               >
@@ -170,12 +170,7 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
           {/* Reset Button */}
           {hasActiveFilters && (
             <div className="flex justify-end pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onReset}
-                className="gap-2"
-              >
+              <Button variant="outline" size="sm" onClick={onReset} className="gap-2">
                 <X className="w-4 h-4" />
                 Limpar Filtros
               </Button>
@@ -184,5 +179,5 @@ export function TaskFiltersComponent({ filters, onFiltersChange, onReset }: Task
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

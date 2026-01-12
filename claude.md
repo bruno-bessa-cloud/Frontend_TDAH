@@ -7,33 +7,41 @@ Frontend TDAH é uma aplicação React + TypeScript voltada para gerenciamento d
 ## Stack Tecnológico
 
 ### Core
+
 - **React 19.2.0** - Biblioteca JavaScript para construção de interfaces
 - **TypeScript 5.9.3** - Superset tipado do JavaScript
 - **Vite 7.2.4** - Build tool e dev server
 
 ### Roteamento
+
 - **React Router DOM 7.12.0** - Roteamento do lado do cliente
 
 ### Gerenciamento de Estado
+
 - **Zustand 5.0.9** - Gerenciamento de estado leve
 - **React Context API** - Contexto de autenticação
 
 ### Requisições HTTP
+
 - **Axios 1.13.2** - Cliente HTTP
 - **TanStack Query 5.90.16** - Gerenciamento de estado do servidor e cache
 
 ### Formulários
+
 - **React Hook Form 7.70.0** - Gerenciamento de formulários com validação
 
 ### UI/UX
+
 - **Tailwind CSS 4.1.18** - Framework CSS utility-first
 - **Lucide React 0.562.0** - Biblioteca de ícones
 - **React Hot Toast 2.6.0** - Notificações toast
 
 ### Utilidades
+
 - **Day.js 1.11.19** - Manipulação de datas
 
 ### Testes
+
 - **Vitest 4.0.16** - Framework de testes
 - **Testing Library (React)** - Utilitários para testes de componentes
 - **jsdom** - Implementação DOM para testes
@@ -130,14 +138,17 @@ O sistema utiliza autenticação baseada em JWT (JSON Web Token):
 O sistema possui três tipos de rotas ([src/routes/AppRoutes.tsx](src/routes/AppRoutes.tsx)):
 
 #### Rotas Públicas
+
 - `/login` - Página de login
 - `/register` - Página de registro
 
 #### Rotas Protegidas
+
 - `/dashboard` - Painel principal (requer autenticação)
 - Outras rotas protegidas podem ser adicionadas dentro do `<ProtectedRoute>`
 
 #### Redirecionamentos
+
 - `/` → `/dashboard` (redirect automático)
 - `*` → Página Not Found
 
@@ -146,6 +157,7 @@ O sistema possui três tipos de rotas ([src/routes/AppRoutes.tsx](src/routes/App
 #### Tipos de Dados ([src/types/index.ts](src/types/index.ts))
 
 **TaskCategory** (Categorias)
+
 ```typescript
 - STUDY: 0      // Estudos
 - WORK: 1       // Trabalho
@@ -156,6 +168,7 @@ O sistema possui três tipos de rotas ([src/routes/AppRoutes.tsx](src/routes/App
 ```
 
 **TaskPriority** (Prioridades)
+
 ```typescript
 - LOW: 0        // Baixa
 - MEDIUM: 1     // Média
@@ -163,6 +176,7 @@ O sistema possui três tipos de rotas ([src/routes/AppRoutes.tsx](src/routes/App
 ```
 
 **TaskStatus** (Status)
+
 ```typescript
 - PENDING: 0       // Pendente
 - IN_PROGRESS: 1   // Em progresso
@@ -171,25 +185,27 @@ O sistema possui três tipos de rotas ([src/routes/AppRoutes.tsx](src/routes/App
 ```
 
 **Task Interface**
+
 ```typescript
 interface Task {
-  id: string
-  title: string
-  description?: string
-  category: TaskCategory
-  priority: TaskPriority
-  status: TaskStatus
-  estimatedMinutes: number
-  actualMinutes?: number
-  deadline: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  title: string;
+  description?: string;
+  category: TaskCategory;
+  priority: TaskPriority;
+  status: TaskStatus;
+  estimatedMinutes: number;
+  actualMinutes?: number;
+  deadline: string;
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
 ### Componentes Principais
 
 #### 1. Register ([src/pages/auth/Register.tsx](src/pages/auth/Register.tsx))
+
 - Formulário de registro com validação
 - Campos: nome, email, senha, confirmação de senha
 - Validações:
@@ -200,16 +216,19 @@ interface Task {
 - Após registro bem-sucedido, redireciona para `/login`
 
 #### 2. Login ([src/pages/auth/Login.tsx](src/pages/auth/Login.tsx))
+
 - Formulário de login
 - Armazena token e dados do usuário
 - Redireciona para dashboard após login
 
 #### 3. Dashboard ([src/pages/dashboard/Dashboard.tsx](src/pages/dashboard/Dashboard.tsx))
+
 - Página principal da aplicação
 - Exibe informações do usuário
 - Acesso a funcionalidades principais
 
 #### 4. ProtectedRoute ([src/components/layout/ProtectedRoute.tsx](src/components/layout/ProtectedRoute.tsx))
+
 - HOC (Higher Order Component) para proteção de rotas
 - Verifica se usuário está autenticado
 - Redireciona para login se não autenticado
@@ -217,13 +236,15 @@ interface Task {
 ## Configuração da API
 
 ### Base URL
+
 A aplicação se conecta à API através da configuração em [src/services/api.ts](src/services/api.ts):
 
 ```typescript
-baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5033'
+baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5033';
 ```
 
 ### Variáveis de Ambiente
+
 Crie um arquivo `.env` na raiz do projeto:
 
 ```env
@@ -233,9 +254,11 @@ VITE_API_URL=http://localhost:5033
 ### Interceptors
 
 **Request Interceptor**
+
 - Adiciona automaticamente o header `Authorization: Bearer {token}` em todas as requisições
 
 **Response Interceptor**
+
 - Detecta erros 401 (não autorizado)
 - Remove token do localStorage
 - Redireciona para `/login`
@@ -284,6 +307,7 @@ npm run dev
 ### Criando Novos Componentes
 
 #### Componente de Página
+
 ```typescript
 // src/pages/exemplo/MinhaPage.tsx
 import { useState } from 'react'
@@ -301,6 +325,7 @@ export default function MinhaPage() {
 ```
 
 #### Componente Reutilizável
+
 ```typescript
 // src/components/comum/MeuComponente.tsx
 interface MeuComponenteProps {
@@ -321,16 +346,16 @@ export default function MeuComponente({ titulo, onClick }: MeuComponenteProps) {
 
 ```typescript
 // src/hooks/useMeuHook.ts
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 
 export function useMeuHook() {
-  const [data, setData] = useState(null)
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     // Lógica do hook
-  }, [])
+  }, []);
 
-  return { data }
+  return { data };
 }
 ```
 
@@ -385,47 +410,47 @@ export default function MeuForm() {
 ### Fazendo Requisições à API
 
 ```typescript
-import api from '../services/api'
+import api from '../services/api';
 
 // GET
-const response = await api.get('/endpoint')
+const response = await api.get('/endpoint');
 
 // POST
-const response = await api.post('/endpoint', { data })
+const response = await api.post('/endpoint', { data });
 
 // PUT
-const response = await api.put('/endpoint/:id', { data })
+const response = await api.put('/endpoint/:id', { data });
 
 // DELETE
-const response = await api.delete('/endpoint/:id')
+const response = await api.delete('/endpoint/:id');
 ```
 
 ### Usando TanStack Query
 
 ```typescript
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '../services/api'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../services/api';
 
 // Query (GET)
 const { data, isLoading, error } = useQuery({
   queryKey: ['tasks'],
   queryFn: async () => {
-    const response = await api.get('/tasks')
-    return response.data
-  }
-})
+    const response = await api.get('/tasks');
+    return response.data;
+  },
+});
 
 // Mutation (POST/PUT/DELETE)
-const queryClient = useQueryClient()
+const queryClient = useQueryClient();
 
 const mutation = useMutation({
   mutationFn: async (newTask) => {
-    return api.post('/tasks', newTask)
+    return api.post('/tasks', newTask);
   },
   onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['tasks'] })
-  }
-})
+    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  },
+});
 ```
 
 ### Notificações Toast
@@ -500,6 +525,7 @@ export default function MeuComponente({ titulo }: Props) {
 ### Tailwind CSS
 
 Classes seguem a ordem:
+
 1. Layout (display, position)
 2. Spacing (margin, padding)
 3. Sizing (width, height)
@@ -559,30 +585,35 @@ npm run test -- AuthContext
 ## Boas Práticas
 
 ### 1. Segurança
+
 - Nunca commite tokens ou senhas
 - Use variáveis de ambiente para dados sensíveis
 - Sempre valide inputs do usuário
 - Sanitize dados antes de exibir
 
 ### 2. Performance
+
 - Use `React.memo` para componentes pesados
 - Lazy loading de rotas: `React.lazy(() => import('./Page'))`
 - Debounce em inputs de busca
 - Pagine listas grandes
 
 ### 3. Acessibilidade
+
 - Use tags semânticas (`<button>`, `<nav>`, `<main>`)
 - Adicione `aria-label` quando necessário
 - Garanta contraste adequado de cores
 - Suporte navegação por teclado
 
 ### 4. TypeScript
+
 - Sempre defina tipos para props
 - Evite `any`, use `unknown` quando necessário
 - Use `interface` para objetos, `type` para unions
 - Aproveite inferência de tipos
 
 ### 5. Git
+
 - Commits pequenos e descritivos
 - Use conventional commits:
   - `feat:` nova funcionalidade
@@ -595,6 +626,7 @@ npm run test -- AuthContext
 ## Troubleshooting
 
 ### Erro: "Cannot find module"
+
 ```bash
 # Limpe node_modules e reinstale
 rm -rf node_modules package-lock.json
@@ -602,6 +634,7 @@ npm install
 ```
 
 ### Erro: "Port already in use"
+
 ```bash
 # Vite usa porta 5173 por padrão
 # Altere em vite.config.ts ou mate o processo:
@@ -609,6 +642,7 @@ lsof -ti:5173 | xargs kill -9
 ```
 
 ### Erro: "TypeScript errors"
+
 ```bash
 # Limpe cache do TypeScript
 rm -rf node_modules/.vite
@@ -616,6 +650,7 @@ npm run build
 ```
 
 ### API não conecta
+
 1. Verifique se a API está rodando
 2. Confirme a URL em `.env`
 3. Verifique CORS na API
@@ -624,12 +659,14 @@ npm run build
 ## Roadmap / Próximas Features
 
 ### Em Desenvolvimento
+
 - [ ] Sistema completo de CRUD de tarefas
 - [ ] Filtros avançados (categoria, prioridade, status)
 - [ ] Visualização de calendário
 - [ ] Timer Pomodoro integrado
 
 ### Planejado
+
 - [ ] Notificações push
 - [ ] Modo offline (PWA)
 - [ ] Sincronização multi-dispositivo
@@ -640,6 +677,7 @@ npm run build
 - [ ] Modo escuro
 
 ### Backlog
+
 - [ ] App mobile (React Native)
 - [ ] Compartilhamento de tarefas
 - [ ] Comentários em tarefas
@@ -668,6 +706,7 @@ npm run build
 ## Recursos Úteis
 
 ### Documentação Oficial
+
 - [React](https://react.dev)
 - [TypeScript](https://www.typescriptlang.org/docs)
 - [Vite](https://vitejs.dev)
@@ -677,11 +716,13 @@ npm run build
 - [Tailwind CSS](https://tailwindcss.com)
 
 ### Ferramentas
+
 - [VS Code](https://code.visualstudio.com) - Editor recomendado
 - [React DevTools](https://chrome.google.com/webstore/detail/react-developer-tools) - Extensão Chrome
 - [TanStack Query DevTools](https://tanstack.com/query/latest/docs/react/devtools) - Debug de queries
 
 ### Extensões VS Code Recomendadas
+
 - ES7+ React/Redux/React-Native snippets
 - Tailwind CSS IntelliSense
 - ESLint
@@ -693,6 +734,7 @@ npm run build
 ## Contato e Suporte
 
 Para dúvidas, sugestões ou reportar bugs:
+
 - Abra uma issue no GitHub
 - Entre em contato com a equipe de desenvolvimento
 
@@ -702,11 +744,13 @@ Para dúvidas, sugestões ou reportar bugs:
 
 ### 1. Reorganização de Componentes UI
 
-**Antes:** 
+**Antes:**
+
 - Primitivas UI estavam localizadas em `@/components/ui` (diretório raiz).
 - Alias múltiplos e complexos no `tsconfig.json` e `vite.config.ts`.
 
 **Depois:**
+
 - Primitivas UI movidas para `src/components/ui` (sob a mesma estrutura de imports).
 - Alias unificado: `@/*` → `./src/*` em ambos `tsconfig.app.json` e `vite.config.ts`.
 - **Benefícies:** Estrutura mais clara, imports consistentes, menos complexidade de alias.
@@ -714,11 +758,13 @@ Para dúvidas, sugestões ou reportar bugs:
 ### 2. Componentização de Tarefas
 
 **Criados/Consolidados:**
+
 - `src/components/tasks/TaskCard.tsx` - Renderização individual de tarefa com status, prioridade, categoria, prazos.
 - `src/components/tasks/TaskForm.tsx` - Formulário de criação/edição de tarefas com validação.
 - `src/components/tasks/TaskFilters.tsx` - Componente de filtros (busca, categoria, prioridade, status).
 
 **Removidos:**
+
 - Versões antigas com sufixo `-FINAL` foram eliminadas.
 
 ### 3. Typings Reforçados
@@ -726,6 +772,7 @@ Para dúvidas, sugestões ou reportar bugs:
 **Mutations em `src/pages/dashboard/Dashboard.tsx`:**
 
 Antes:
+
 ```typescript
 const createTask = useMutation<any, Error, any>({...})
 const updateTask = useMutation<any, Error, { id: string; data: any }>({...})
@@ -733,6 +780,7 @@ const deleteTask = useMutation<any, Error, string>({...})
 ```
 
 Depois:
+
 ```typescript
 type NewTaskPayload = CreateTaskDto & { status?: TaskStatus }
 type UpdateTaskVariables = { id: string; data: Partial<CreateTaskDto & { status?: TaskStatus }> }
@@ -747,6 +795,7 @@ const deleteTask = useMutation<void, Error, string>({...})
 ### 4. Primitivas UI Consolidadas
 
 Todos os componentes UI estão agora centralizados em `src/components/ui/`:
+
 - `button.tsx`, `input.tsx`, `label.tsx`, `select.tsx`
 - `card.tsx`, `textarea.tsx`, `badge.tsx`
 - `dialog.tsx`, `checkbox.tsx`, `dropdown-menu.tsx`, `switch.tsx`, `tabs.tsx`
@@ -756,6 +805,7 @@ Baseados em Radix UI com Tailwind CSS para estilização.
 ### 5. Callbacks e Handlers Tipados
 
 Callbacks em componentes de formulário agora possuem tipos explícitos:
+
 - `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...}`
 - `onValueChange={(value: string) => ...}`
 
