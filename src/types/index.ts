@@ -71,3 +71,69 @@ export interface RegisterFormData {
   password: string;
   confirmPassword: string;
 }
+
+// Gamification Types
+export interface UserLevel {
+  level: number;
+  title: string;
+  minXP: number;
+  maxXP: number;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt?: string;
+  progress: number;
+  maxProgress: number;
+  xpReward: number;
+  category: 'tasks' | 'streak' | 'special' | 'social';
+}
+
+export interface UserStats {
+  totalXP: number;
+  currentLevel: UserLevel;
+  tasksCompleted: number;
+  tasksCompletedToday: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalMinutesFocused: number;
+  achievements: Achievement[];
+  weeklyProgress: {
+    day: string;
+    completed: number;
+  }[];
+}
+
+// Schedule/Time Block Types
+export const TimeBlockType = {
+  WORK: 'WORK',
+  CLASS: 'CLASS',
+  FIXED: 'FIXED',
+  TASK: 'TASK',
+} as const;
+export type TimeBlockType = (typeof TimeBlockType)[keyof typeof TimeBlockType];
+
+export interface TimeBlock {
+  id: string;
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Domingo, 6 = Sábado
+  startTime: string; // Formato HH:mm
+  endTime: string; // Formato HH:mm
+  type: TimeBlockType;
+  title: string;
+  category?: TaskCategory;
+  isRecurring: boolean;
+}
+
+export interface WeekSchedule {
+  blocks: TimeBlock[];
+}
+
+// Onboarding Types
+export interface OnboardingData {
+  workSchedule: TimeBlock[];
+  classSchedule: TimeBlock[];
+  fixedCommitments: TimeBlock[];
+}
