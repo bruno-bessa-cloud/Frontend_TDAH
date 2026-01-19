@@ -62,7 +62,7 @@ const navItems = [
   },
   {
     title: 'Minha Semana',
-    url: '/semana',
+    url: '/schedule/week',
     icon: Calendar,
     items: [
       {
@@ -75,26 +75,26 @@ const navItems = [
       },
       {
         title: 'Visão Semanal',
-        url: '/semana/visao',
+        url: '/schedule/week',
       },
       {
         title: 'Calendário',
-        url: '/semana/calendario',
+        url: '/schedule/week',
       },
     ],
   },
   {
     title: 'Lista de Tarefas',
-    url: '/tarefas',
+    url: '/tasks/notion',
     icon: ListTodo,
     items: [
       {
         title: 'Todas as Tarefas',
-        url: '/tarefas',
+        url: '/tasks/notion',
       },
       {
         title: 'Nova Tarefa',
-        url: '/tarefas/nova',
+        url: '/tasks/notion',
       },
       {
         title: 'Concluídas',
@@ -113,7 +113,7 @@ const navItems = [
     items: [
       {
         title: 'Minha Rotina',
-        url: '/horarios/rotina',
+        url: '/schedule/routine',
       },
       {
         title: 'Novo Horário',

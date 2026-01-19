@@ -125,6 +125,8 @@ export interface TimeBlock {
   title: string;
   category?: TaskCategory;
   isRecurring: boolean;
+  validFrom?: string; // Data início da repetição (ISO string)
+  validUntil?: string; // Data fim da repetição (ISO string)
 }
 
 export interface WeekSchedule {

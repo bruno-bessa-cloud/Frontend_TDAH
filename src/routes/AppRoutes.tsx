@@ -3,6 +3,8 @@ import Login from '@/pages/auth/Login';
 import Register from '../pages/auth/Register';
 import Dashboard from '../pages/dashboard/Dashboard';
 import WeeklyRoutine from '../pages/schedule/WeeklyRoutine';
+import MyWeek from '@/pages/schedule/MyWeek';
+import TasksNotionView from '@/pages/tasks/TasksNotionView';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
 import TestLogin from '@/pages/test/TestLogin';
 import TestRegister from '@/pages/test/TestRegister';
@@ -24,6 +26,8 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/schedule/routine" element={<WeeklyRoutine />} />
+        <Route path="/schedule/week" element={<MyWeek />} />
+        <Route path="/tasks/notion" element={<TasksNotionView />} />
       </Route>
 
       <Route path="*" element={<div>Not Found</div>} />

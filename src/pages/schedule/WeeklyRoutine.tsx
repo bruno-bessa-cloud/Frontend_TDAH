@@ -17,6 +17,7 @@ import {
   CalendarClock,
   Save,
   RotateCcw,
+  CalendarRange,
 } from 'lucide-react';
 import { TimeBlockType } from '@/types';
 import type { TimeBlock } from '@/types';
@@ -75,51 +76,108 @@ const saveBlocks = (blocks: TimeBlock[]) => {
   localStorage.setItem('weeklyRoutine', JSON.stringify(blocks));
 };
 
+// Formatar data para exibição
+const formatDate = (dateStr: string | undefined): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 interface NewBlockForm {
   title: string;
   type: TimeBlockType;
-  dayOfWeek: number;
+  daysOfWeek: number[]; // Múltiplos dias
   startTime: string;
   endTime: string;
   isRecurring: boolean;
+  validFrom: string; // Data início
+  validUntil: string; // Data fim
 }
 
 export default function WeeklyRoutine() {
   const [blocks, setBlocks] = useState<TimeBlock[]>(loadBlocks);
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Data de hoje formatada para input date
+  const today = new Date().toISOString().split('T')[0];
+
   const [newBlock, setNewBlock] = useState<NewBlockForm>({
     title: '',
     type: TimeBlockType.WORK,
-    dayOfWeek: 1,
+    daysOfWeek: [1], // Segunda por padrão
     startTime: '09:00',
     endTime: '18:00',
     isRecurring: true,
+    validFrom: today,
+    validUntil: '',
   });
+
+  // Toggle dia da semana
+  const toggleDay = (dayValue: number) => {
+    setNewBlock((prev) => {
+      const isSelected = prev.daysOfWeek.includes(dayValue);
+      if (isSelected) {
+        // Não permite desmarcar se for o único dia selecionado
+        if (prev.daysOfWeek.length === 1) return prev;
+        return {
+          ...prev,
+          daysOfWeek: prev.daysOfWeek.filter((d) => d !== dayValue),
+        };
+      } else {
+        return {
+          ...prev,
+          daysOfWeek: [...prev.daysOfWeek, dayValue].sort((a, b) => a - b),
+        };
+      }
+    });
+  };
+
+  // Selecionar dias úteis (Seg-Sex)
+  const selectWeekdays = () => {
+    setNewBlock((prev) => ({
+      ...prev,
+      daysOfWeek: [1, 2, 3, 4, 5],
+    }));
+  };
+
+  // Selecionar todos os dias
+  const selectAllDays = () => {
+    setNewBlock((prev) => ({
+      ...prev,
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    }));
+  };
 
   const handleAddBlock = () => {
     if (!newBlock.title.trim()) return;
+    if (newBlock.daysOfWeek.length === 0) return;
 
-    const block: TimeBlock = {
+    // Cria um bloco para cada dia selecionado
+    const newBlocks: TimeBlock[] = newBlock.daysOfWeek.map((day) => ({
       id: generateId(),
       title: newBlock.title,
       type: newBlock.type,
-      dayOfWeek: newBlock.dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+      dayOfWeek: day as 0 | 1 | 2 | 3 | 4 | 5 | 6,
       startTime: newBlock.startTime,
       endTime: newBlock.endTime,
       isRecurring: newBlock.isRecurring,
-    };
+      validFrom: newBlock.isRecurring ? newBlock.validFrom : undefined,
+      validUntil: newBlock.isRecurring && newBlock.validUntil ? newBlock.validUntil : undefined,
+    }));
 
-    const updatedBlocks = [...blocks, block];
+    const updatedBlocks = [...blocks, ...newBlocks];
     setBlocks(updatedBlocks);
     saveBlocks(updatedBlocks);
 
     setNewBlock({
       title: '',
       type: TimeBlockType.WORK,
-      dayOfWeek: 1,
+      daysOfWeek: [1],
       startTime: '09:00',
       endTime: '18:00',
       isRecurring: true,
+      validFrom: today,
+      validUntil: '',
     });
     setShowAddForm(false);
   };
@@ -199,12 +257,13 @@ export default function WeeklyRoutine() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Linha 1: Título e Tipo */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="title">Título</Label>
                       <Input
                         id="title"
-                        placeholder="Ex: Trabalho, Faculdade..."
+                        placeholder="Ex: Trabalho, Faculdade, Estágio..."
                         value={newBlock.title}
                         onChange={(e) => setNewBlock({ ...newBlock, title: e.target.value })}
                       />
@@ -225,33 +284,62 @@ export default function WeeklyRoutine() {
                         ))}
                       </select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="day">Dia da Semana</Label>
-                      <select
-                        id="day"
-                        value={newBlock.dayOfWeek}
-                        onChange={(e) => setNewBlock({ ...newBlock, dayOfWeek: Number(e.target.value) })}
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      >
-                        {DAYS_OF_WEEK.map((day) => (
-                          <option key={day.value} value={day.value}>
-                            {day.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-6">
-                      <Switch
-                        checked={newBlock.isRecurring}
-                        onCheckedChange={(checked) => setNewBlock({ ...newBlock, isRecurring: checked })}
-                      />
-                      <Label>Repetir toda semana</Label>
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Linha 2: Dias da Semana */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Dias da Semana</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={selectWeekdays}
+                          className="text-xs h-7"
+                        >
+                          Seg-Sex
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={selectAllDays}
+                          className="text-xs h-7"
+                        >
+                          Todos
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const isSelected = newBlock.daysOfWeek.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleDay(day.value)}
+                            className={cn(
+                              'px-3 py-2 rounded-lg text-sm font-medium transition-all border-2',
+                              isSelected
+                                ? 'bg-focus-blue-500 text-white border-focus-blue-500'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-transparent hover:border-focus-blue-300'
+                            )}
+                          >
+                            {day.short}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {newBlock.daysOfWeek.length === 1
+                        ? '1 dia selecionado'
+                        : `${newBlock.daysOfWeek.length} dias selecionados`}
+                    </p>
+                  </div>
+
+                  {/* Linha 3: Horários */}
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="start">Hora Início</Label>
                       <Input
@@ -270,19 +358,64 @@ export default function WeeklyRoutine() {
                         onChange={(e) => setNewBlock({ ...newBlock, endTime: e.target.value })}
                       />
                     </div>
-                    <div className="col-span-2 flex items-end gap-2">
-                      <Button
-                        onClick={handleAddBlock}
-                        disabled={!newBlock.title.trim()}
-                        className="flex-1 bg-focus-blue-500 hover:bg-focus-blue-600"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Salvar
-                      </Button>
-                      <Button variant="outline" onClick={() => setShowAddForm(false)}>
-                        Cancelar
-                      </Button>
+                  </div>
+
+                  {/* Linha 4: Repetição */}
+                  <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CalendarRange className="h-4 w-4 text-focus-blue-500" />
+                        <Label className="font-medium">Repetir toda semana</Label>
+                      </div>
+                      <Switch
+                        checked={newBlock.isRecurring}
+                        onCheckedChange={(checked) => setNewBlock({ ...newBlock, isRecurring: checked })}
+                      />
                     </div>
+
+                    {newBlock.isRecurring && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="validFrom">A partir de</Label>
+                          <Input
+                            id="validFrom"
+                            type="date"
+                            value={newBlock.validFrom}
+                            onChange={(e) => setNewBlock({ ...newBlock, validFrom: e.target.value })}
+                            min={today}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="validUntil">Até (opcional)</Label>
+                          <Input
+                            id="validUntil"
+                            type="date"
+                            value={newBlock.validUntil}
+                            onChange={(e) => setNewBlock({ ...newBlock, validUntil: e.target.value })}
+                            min={newBlock.validFrom || today}
+                            placeholder="Sem data fim"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Deixe vazio para repetir indefinidamente
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Linha 5: Botões */}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={handleAddBlock}
+                      disabled={!newBlock.title.trim() || newBlock.daysOfWeek.length === 0}
+                      className="flex-1 bg-focus-blue-500 hover:bg-focus-blue-600"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar {newBlock.daysOfWeek.length > 1 ? `(${newBlock.daysOfWeek.length} dias)` : ''}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                      Cancelar
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -321,6 +454,12 @@ export default function WeeklyRoutine() {
                             <div className="text-xs opacity-75">
                               {block.startTime} - {block.endTime}
                             </div>
+                            {block.isRecurring && (block.validFrom || block.validUntil) && (
+                              <div className="text-[10px] opacity-60 mt-1">
+                                {block.validFrom && formatDate(block.validFrom)}
+                                {block.validUntil && ` - ${formatDate(block.validUntil)}`}
+                              </div>
+                            )}
                             <button
                               onClick={() => handleRemoveBlock(block.id)}
                               className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-opacity"
