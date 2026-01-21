@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -14,10 +14,14 @@ import {
   CalendarClock,
   Clock,
   CalendarRange,
+  RefreshCw,
+  CheckSquare,
 } from 'lucide-react';
 import { TimeBlockType } from '@/types';
-import type { TimeBlock } from '@/types';
+import type { TimeBlock, Task, ScheduledTask } from '@/types';
 import { cn } from '@/lib/utils';
+import { scheduleTasksInWeek, getWeekStartDate } from '@/lib/scheduler';
+import toast from 'react-hot-toast';
 
 // Configuração de cores por tipo de bloco
 const BLOCK_TYPE_CONFIG = {
@@ -85,6 +89,19 @@ const MONTHS_PT = [
 const loadBlocks = (): TimeBlock[] => {
   try {
     const saved = localStorage.getItem('weeklyRoutine');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+};
+
+// Carregar tarefas do localStorage
+const loadTasks = (): Task[] => {
+  try {
+    const saved = localStorage.getItem('tasks');
     if (saved) {
       return JSON.parse(saved);
     }
@@ -173,8 +190,37 @@ const formatShortDate = (dateStr: string | undefined): string => {
 
 export default function MyWeek() {
   const [blocks] = useState<TimeBlock[]>(loadBlocks);
+  const [tasks] = useState<Task[]>(loadTasks);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
+  const [isScheduling, setIsScheduling] = useState(false);
   const [currentMonday, setCurrentMonday] = useState<Date>(() => getMonday(new Date()));
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0); // Para mobile
+
+  // Função para reagendar tarefas na semana
+  const handleReschedule = useCallback(() => {
+    setIsScheduling(true);
+
+    try {
+      // Obtém o domingo da semana (início da semana para o scheduler)
+      const weekStart = getWeekStartDate(currentMonday);
+
+      // Executa o algoritmo de agendamento
+      const scheduled = scheduleTasksInWeek(blocks, tasks, weekStart);
+
+      setScheduledTasks(scheduled);
+
+      if (scheduled.length > 0) {
+        toast.success(`${scheduled.length} tarefa${scheduled.length > 1 ? 's' : ''} agendada${scheduled.length > 1 ? 's' : ''} com sucesso!`);
+      } else {
+        toast('Nenhuma tarefa pendente para agendar', { icon: 'ℹ️' });
+      }
+    } catch (error) {
+      console.error('[MyWeek] Erro ao agendar tarefas:', error);
+      toast.error('Erro ao agendar tarefas');
+    } finally {
+      setIsScheduling(false);
+    }
+  }, [blocks, tasks, currentMonday]);
 
   // Navegar semanas
   const goToPreviousWeek = () => {
@@ -234,6 +280,45 @@ export default function MyWeek() {
     return Object.values(blocksByDay).reduce((sum, dayBlocks) => sum + dayBlocks.length, 0);
   }, [blocksByDay]);
 
+  // Agrupar tarefas agendadas por dia
+  const scheduledByDay = useMemo(() => {
+    const grouped: Record<number, ScheduledTask[]> = {};
+
+    // Inicializar todos os dias
+    DAYS_OF_WEEK.forEach((day) => {
+      grouped[day.value] = [];
+    });
+
+    // Agrupar tarefas agendadas
+    scheduledTasks.forEach((scheduled) => {
+      if (grouped[scheduled.dayOfWeek]) {
+        grouped[scheduled.dayOfWeek].push(scheduled);
+      }
+    });
+
+    // Ordenar por horário de início
+    Object.keys(grouped).forEach((day) => {
+      grouped[Number(day)].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    });
+
+    return grouped;
+  }, [scheduledTasks]);
+
+  // Calcular estilo para tarefas agendadas (mesmo que blocos fixos)
+  const getScheduledTaskStyle = (scheduled: ScheduledTask): { top: string; height: string } => {
+    const startMinutes = timeToMinutes(scheduled.startTime);
+    const endMinutes = timeToMinutes(scheduled.endTime);
+    const dayStartMinutes = 6 * 60; // 6:00
+
+    const topOffset = ((startMinutes - dayStartMinutes) / 30) * 40; // 40px por slot
+    const height = ((endMinutes - startMinutes) / 30) * 40;
+
+    return {
+      top: `${Math.max(0, topOffset)}px`,
+      height: `${Math.max(40, height)}px`,
+    };
+  };
+
   return (
     <SidebarProvider
       style={
@@ -266,6 +351,16 @@ export default function MyWeek() {
               </div>
 
               <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleReschedule}
+                  disabled={isScheduling}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <RefreshCw className={cn('h-4 w-4 mr-2', isScheduling && 'animate-spin')} />
+                  {isScheduling ? 'Agendando...' : 'Reagendar Semana'}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -344,6 +439,19 @@ export default function MyWeek() {
                   </div>
                 );
               })}
+              {/* Legenda para tarefas agendadas */}
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-green-500" />
+                <CheckSquare className="h-4 w-4 text-green-700 dark:text-green-300" />
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  Tarefa Agendada
+                </span>
+                {scheduledTasks.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                    {scheduledTasks.length}
+                  </Badge>
+                )}
+              </div>
             </div>
 
             {/* Grid Desktop: 7 colunas */}
@@ -397,7 +505,7 @@ export default function MyWeek() {
                           ))}
                         </div>
 
-                        {/* Blocos */}
+                        {/* Blocos fixos */}
                         <div className="absolute inset-0 left-7">
                           {dayBlocks.map((block) => {
                             const config = BLOCK_TYPE_CONFIG[block.type];
@@ -437,10 +545,34 @@ export default function MyWeek() {
                               </div>
                             );
                           })}
+
+                          {/* Tarefas agendadas */}
+                          {(scheduledByDay[day.value] || []).map((scheduled) => {
+                            const style = getScheduledTaskStyle(scheduled);
+
+                            return (
+                              <div
+                                key={scheduled.id}
+                                className="absolute left-0 right-1 rounded-md px-1.5 py-1 overflow-hidden border-l-4 bg-green-100 dark:bg-green-900/40 border-green-400"
+                                style={style}
+                                title={`Tarefa: ${scheduled.task.title}`}
+                              >
+                                <div className="flex items-center gap-1">
+                                  <CheckSquare className="h-3 w-3 flex-shrink-0 text-green-700 dark:text-green-300" />
+                                  <p className="text-xs font-medium truncate text-green-700 dark:text-green-300">
+                                    {scheduled.task.title}
+                                  </p>
+                                </div>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                  {scheduled.startTime} - {scheduled.endTime}
+                                </p>
+                              </div>
+                            );
+                          })}
                         </div>
 
-                        {/* Mensagem se não houver blocos */}
-                        {dayBlocks.length === 0 && (
+                        {/* Mensagem se não houver blocos nem tarefas agendadas */}
+                        {dayBlocks.length === 0 && (scheduledByDay[day.value] || []).length === 0 && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <p className="text-xs text-gray-400">Livre</p>
                           </div>
@@ -498,7 +630,7 @@ export default function MyWeek() {
                             ))}
                           </div>
 
-                          {/* Blocos */}
+                          {/* Blocos fixos */}
                           <div className="absolute inset-0 left-14">
                             {dayBlocks.map((block) => {
                               const config = BLOCK_TYPE_CONFIG[block.type];
@@ -541,10 +673,33 @@ export default function MyWeek() {
                                 </div>
                               );
                             })}
+
+                            {/* Tarefas agendadas (mobile) */}
+                            {(scheduledByDay[day.value] || []).map((scheduled) => {
+                              const style = getScheduledTaskStyle(scheduled);
+
+                              return (
+                                <div
+                                  key={scheduled.id}
+                                  className="absolute left-0 right-2 rounded-lg px-3 py-2 overflow-hidden border-l-4 shadow-sm bg-green-100 dark:bg-green-900/40 border-green-400"
+                                  style={style}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <CheckSquare className="h-4 w-4 flex-shrink-0 text-green-700 dark:text-green-300" />
+                                    <p className="text-sm font-medium truncate text-green-700 dark:text-green-300">
+                                      {scheduled.task.title}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {scheduled.startTime} - {scheduled.endTime}
+                                  </p>
+                                </div>
+                              );
+                            })}
                           </div>
 
-                          {/* Mensagem se não houver blocos */}
-                          {dayBlocks.length === 0 && (
+                          {/* Mensagem se não houver blocos nem tarefas agendadas */}
+                          {dayBlocks.length === 0 && (scheduledByDay[day.value] || []).length === 0 && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <div className="text-center text-gray-400">
                                 <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
