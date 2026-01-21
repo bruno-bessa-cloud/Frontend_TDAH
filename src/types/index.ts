@@ -139,3 +139,24 @@ export interface OnboardingData {
   classSchedule: TimeBlock[];
   fixedCommitments: TimeBlock[];
 }
+
+/**
+ * Representa uma tarefa agendada em um slot de tempo específico.
+ * Resultado do algoritmo de agendamento automático.
+ */
+export interface ScheduledTask {
+  /** ID único do agendamento (gerado pelo scheduler) */
+  id: string;
+  /** ID da tarefa original que foi agendada */
+  taskId: string;
+  /** Referência completa à tarefa agendada */
+  task: Task;
+  /** Dia da semana (0 = Domingo, 6 = Sábado) */
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /** Horário de início no formato HH:mm */
+  startTime: string;
+  /** Horário de término no formato HH:mm */
+  endTime: string;
+  /** Data completa do agendamento (ISO string YYYY-MM-DD) */
+  date: string;
+}

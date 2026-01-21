@@ -813,13 +813,154 @@ Isso eliminou erros TS7006 (implicit any) em modo strict.
 
 ### Estado Atual da Build
 
-✅ **TypeScript Build:** Sem erros  
-✅ **Vite Build:** Sucesso (`dist/` gerado)  
-✅ **Dev Server:** Funcional em http://localhost:5174/ (port 5173 estava ocupado)  
+✅ **TypeScript Build:** Sem erros
+✅ **Vite Build:** Sucesso (`dist/` gerado)
+✅ **Dev Server:** Funcional em http://localhost:5174/ (port 5173 estava ocupado)
 ⚠️ **Node.js:** Versão 20.17.0 (recomendado ≥ 20.19 ou 22.x)
 
 ---
 
-**Última atualização:** 2026-01-12
-**Versão:** 0.0.0
+## Sprint Atual: Agendamento Automático (21 Janeiro 2026)
+
+### Branch Ativa
+```
+feature/us-agendamento-automatico-scheduler
+```
+
+### User Story
+**US - Gerenciamento de Compromissos Fixos / Agendamento Automático**
+
+Implementar sistema de agendamento automático que distribui tarefas pendentes nos horários livres da semana, respeitando compromissos fixos.
+
+---
+
+### ✅ Concluído
+
+#### 1. Interface ScheduledTask (`src/types/index.ts`)
+```typescript
+export interface ScheduledTask {
+  id: string;              // ID único do agendamento
+  taskId: string;          // ID da tarefa original
+  task: Task;              // Referência completa à tarefa
+  dayOfWeek: 0|1|2|3|4|5|6;
+  startTime: string;       // "HH:mm"
+  endTime: string;         // "HH:mm"
+  date: string;            // "YYYY-MM-DD"
+}
+```
+
+#### 2. Algoritmo de Agendamento (`src/lib/scheduler.ts`)
+
+**Função Principal:**
+- `scheduleTasksInWeek(fixedBlocks, tasks, weekStartDate): ScheduledTask[]`
+
+**Funções Auxiliares:**
+| Função | Descrição |
+|--------|-----------|
+| `createWeekSlots()` | Cria `string[][]` com 7 dias × 34 slots (6h-23h) |
+| `getOccupiedSlots(start, end)` | Retorna array de slots ocupados por um bloco |
+| `findConsecutiveSlots(slots, n)` | Busca N slots consecutivos livres |
+| `calculateEndTime(start, min)` | Calcula horário de término |
+| `getDateForDay(date, day)` | Retorna data YYYY-MM-DD para dia da semana |
+| `getWeekStartDate(date)` | Retorna domingo da semana |
+| `getWeekAvailability(blocks, date)` | Estatísticas de disponibilidade |
+
+**Algoritmo:**
+1. Cria grid de slots 30min para 7 dias
+2. Remove slots ocupados pelos fixedBlocks
+3. Filtra tarefas (status !== COMPLETED)
+4. Ordena: prioridade DESC → deadline ASC → duração ASC
+5. Aloca cada tarefa no primeiro slot livre consecutivo
+6. Retorna `ScheduledTask[]`
+
+#### 3. Integração no MyWeek (`src/pages/schedule/MyWeek.tsx`)
+
+**Funcionalidades implementadas:**
+- ✅ Botão "Reagendar Semana" com ícone RefreshCw
+- ✅ Carrega tasks do localStorage
+- ✅ Executa `scheduleTasksInWeek()` ao clicar
+- ✅ Renderiza tarefas agendadas no grid (cor verde)
+- ✅ Blocos clicáveis com hover effect
+- ✅ Dialog de detalhes ao clicar na tarefa
+- ✅ Botão "Marcar Concluída" no dialog
+- ✅ Atualiza localStorage ao concluir tarefa
+- ✅ Legenda com contador de tarefas agendadas
+
+**Cores das tarefas agendadas:**
+```
+bg-green-100 dark:bg-green-900/30
+text-green-700 dark:text-green-300
+border-green-300
+```
+
+---
+
+### 📝 Commits Realizados (5)
+
+```
+5c202b8 feat: adiciona Dialog de detalhes para tarefas agendadas
+3d2fc77 refactor: refatora scheduler com funções auxiliares específicas
+9212ba0 feat: integra scheduler na página MyWeek
+d03b812 feat: cria algoritmo de agendamento automático de tarefas
+86ebd1a feat: adiciona interface ScheduledTask para agendamento automático
+```
+
+---
+
+### 🔲 Pendente / A Fazer
+
+#### Melhorias no Scheduler
+- [ ] Considerar `validFrom`/`validUntil` dos blocos fixos na remoção de slots
+- [ ] Adicionar preferências de horário do usuário (manhã/tarde/noite)
+- [ ] Fragmentar tarefas longas em múltiplos blocos
+- [ ] Implementar reagendamento automático ao mudar de semana
+
+#### Melhorias na UI
+- [ ] Drag & drop para mover tarefas agendadas manualmente
+- [ ] Editar tarefa direto do dialog
+- [ ] Mostrar tempo total agendado no header
+- [ ] Animação ao adicionar/remover tarefa do grid
+
+#### Persistência
+- [ ] Salvar `scheduledTasks` no localStorage
+- [ ] Recuperar agendamento ao recarregar página
+- [ ] Sincronizar com backend (API)
+
+#### Testes
+- [ ] Testes unitários para funções do scheduler
+- [ ] Testes de integração para MyWeek
+
+---
+
+### 📁 Arquivos Modificados nesta Sprint
+
+```
+src/types/index.ts                    # Interface ScheduledTask
+src/lib/scheduler.ts                  # Algoritmo completo (novo)
+src/pages/schedule/MyWeek.tsx         # Integração UI + Dialog
+```
+
+---
+
+### 🚀 Como Testar
+
+1. Acesse `/schedule/week` (Minha Semana)
+2. Certifique-se de ter tarefas no localStorage (chave `tasks`)
+3. Clique em "Reagendar Semana"
+4. Tarefas aparecerão em verde nos slots livres
+5. Clique em uma tarefa para ver detalhes
+6. Clique "Marcar Concluída" para finalizar
+
+---
+
+### Estado Atual da Build
+
+✅ **TypeScript Build:** Sem erros
+✅ **Vite Build:** Sucesso
+✅ **Branch:** `feature/us-agendamento-automatico-scheduler` (5 commits ahead of main)
+
+---
+
+**Última atualização:** 2026-01-21
+**Versão:** 0.1.0
 **Mantido por:** Equipe Frontend TDAH
