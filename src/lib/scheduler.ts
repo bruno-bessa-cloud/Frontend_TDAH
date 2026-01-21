@@ -5,19 +5,26 @@
  * tarefas pendentes nos horários livres da semana, respeitando compromissos
  * fixos (trabalho, aulas, etc.) e priorizando por urgência e importância.
  *
- * Estrutura principal:
+ * ESTRUTURA PRINCIPAL:
  * - Cada dia possui slots de 30 minutos das 06:00 às 23:00
  * - Slots são representados como strings ['06:00', '06:30', '07:00', ...]
  * - Blocos fixos removem slots da disponibilidade
  * - Tarefas são alocadas em sequências consecutivas de slots livres
  *
+ * FUNÇÕES AUXILIARES:
+ * - createWeekSlots(): Cria grid de 7 dias com 34 slots cada
+ * - getOccupiedSlots(): Gera array de slots ocupados por um bloco
+ * - findConsecutiveSlots(): Busca sequência de slots consecutivos livres
+ * - calculateEndTime(): Calcula horário de término
+ * - getDateForDay(): Calcula data para um dia da semana
+ *
  * @module scheduler
  * @author Frontend TDAH Team
- * @version 2.0.0
+ * @version 3.0.0
  */
 
-import type { Task, TimeBlock, ScheduledTask } from '../types';
-import { TaskStatus, TaskPriority } from '../types';
+import type { Task, TimeBlock, ScheduledTask } from '@/types';
+import { TaskStatus } from '@/types';
 
 // ============================================================================
 // CONSTANTES DE CONFIGURAÇÃO
@@ -39,40 +46,33 @@ const SLOTS_PER_DAY = (DAY_END_HOUR - DAY_START_HOUR) * (60 / SLOT_DURATION_MINU
 const DAYS_IN_WEEK = 7;
 
 // ============================================================================
-// TIPOS AUXILIARES
+// FUNÇÃO AUXILIAR: generateUniqueId
 // ============================================================================
 
 /**
- * Estrutura que representa os slots disponíveis de uma semana.
- * Cada dia é um array de strings no formato "HH:mm".
+ * Gera um ID único para identificar cada agendamento.
+ * Usa crypto.randomUUID() se disponível, senão fallback para Math.random.
  *
- * Exemplo:
- * {
- *   0: ['06:00', '06:30', '07:00', ...], // Domingo
- *   1: ['06:00', '06:30', '07:00', ...], // Segunda
- *   ...
- *   6: ['06:00', '06:30', '07:00', ...]  // Sábado
- * }
+ * @returns String única para identificar o agendamento
+ *
+ * @example
+ * generateUniqueId() // "550e8400-e29b-41d4-a716-446655440000" (se crypto disponível)
+ * generateUniqueId() // "sched_1705678234567_a1b2c3" (fallback)
  */
-type WeekSlots = {
-  [day: number]: string[];
-};
+function generateUniqueId(): string {
+  // Tenta usar crypto.randomUUID() se disponível (browsers modernos e Node.js 14.17+)
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
 
-/**
- * Resultado da busca por slots consecutivos.
- * Contém as informações necessárias para criar um ScheduledTask.
- */
-interface ConsecutiveSlotsResult {
-  /** Dia da semana onde os slots foram encontrados (0-6) */
-  dayOfWeek: number;
-  /** Índice inicial no array de slots do dia */
-  startIndex: number;
-  /** Lista de slots que serão utilizados */
-  slots: string[];
+  // Fallback: combina timestamp com número aleatório
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 10);
+  return `sched_${timestamp}_${random}`;
 }
 
 // ============================================================================
-// FUNÇÕES AUXILIARES - MANIPULAÇÃO DE TEMPO
+// FUNÇÃO AUXILIAR: timeToMinutes
 // ============================================================================
 
 /**
@@ -109,43 +109,34 @@ function minutesToTime(minutes: number): string {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-/**
- * Gera um ID único para identificar cada agendamento.
- * Combina timestamp com número aleatório para garantir unicidade.
- *
- * @returns String única no formato "sched_timestamp_random"
- *
- * @example
- * generateScheduleId() // "sched_1705678234567_a1b2c3"
- */
-function generateScheduleId(): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  return `sched_${timestamp}_${random}`;
-}
-
 // ============================================================================
-// FUNÇÃO: createWeekSlots
+// FUNÇÃO AUXILIAR: createWeekSlots
 // ============================================================================
 
 /**
  * Cria a estrutura de slots disponíveis para toda a semana.
- * Cada dia recebe um array com todos os horários de 30 em 30 minutos,
- * começando às 06:00 e terminando às 22:30 (último slot antes das 23:00).
+ * Retorna um array de 7 arrays (um para cada dia da semana).
+ * Cada dia contém 34 strings representando slots de 30 minutos.
  *
- * @returns Objeto WeekSlots com 7 dias, cada um com 34 slots
+ * ESTRUTURA DO RETORNO:
+ * - Índice 0: Domingo ['06:00', '06:30', ..., '22:30']
+ * - Índice 1: Segunda ['06:00', '06:30', ..., '22:30']
+ * - ...
+ * - Índice 6: Sábado ['06:00', '06:30', ..., '22:30']
  *
- * Estrutura gerada:
- * - Cada dia: ['06:00', '06:30', '07:00', ..., '22:00', '22:30']
- * - Total: 34 slots por dia (17 horas * 2 slots/hora)
+ * Total: 7 dias × 34 slots = 238 slots na semana
+ *
+ * @returns Array bidimensional string[][] com 7 arrays de 34 slots cada
  *
  * @example
  * const weekSlots = createWeekSlots();
- * console.log(weekSlots[0]); // ['06:00', '06:30', ..., '22:30'] - Domingo
+ * console.log(weekSlots[0]); // ['06:00', '06:30', '07:00', ..., '22:30'] - Domingo
  * console.log(weekSlots[0].length); // 34
+ * console.log(weekSlots.length); // 7
  */
-export function createWeekSlots(): WeekSlots {
-  const weekSlots: WeekSlots = {};
+export function createWeekSlots(): string[][] {
+  // Inicializa array de 7 dias
+  const weekSlots: string[][] = [];
 
   // Itera por cada dia da semana (0 = Domingo até 6 = Sábado)
   for (let day = 0; day < DAYS_IN_WEEK; day++) {
@@ -160,28 +151,177 @@ export function createWeekSlots(): WeekSlots {
       daySlots.push(timeString);
     }
 
-    weekSlots[day] = daySlots;
+    weekSlots.push(daySlots);
   }
 
   return weekSlots;
 }
 
 // ============================================================================
-// FUNÇÃO: getDateForDay
+// FUNÇÃO AUXILIAR: getOccupiedSlots
+// ============================================================================
+
+/**
+ * Gera array de slots ocupados entre um horário de início e fim.
+ * Usado para identificar quais slots devem ser removidos quando há um bloco fixo.
+ *
+ * LÓGICA:
+ * 1. Converte startTime e endTime para minutos
+ * 2. Itera em incrementos de 30 minutos
+ * 3. Para cada incremento, gera o slot no formato "HH:mm"
+ * 4. Retorna array com todos os slots ocupados
+ *
+ * Nota: O endTime NÃO é incluído como slot ocupado, apenas os slots
+ * que começam ANTES do endTime.
+ *
+ * @param startTime - Horário de início no formato "HH:mm"
+ * @param endTime - Horário de término no formato "HH:mm"
+ * @returns Array de strings com os slots ocupados
+ *
+ * @example
+ * getOccupiedSlots("09:00", "12:00")
+ * // Retorna: ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
+ * // Note que '12:00' NÃO está incluído
+ *
+ * @example
+ * getOccupiedSlots("14:00", "15:30")
+ * // Retorna: ['14:00', '14:30', '15:00']
+ */
+export function getOccupiedSlots(startTime: string, endTime: string): string[] {
+  const occupiedSlots: string[] = [];
+
+  // Converte horários para minutos para facilitar iteração
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = timeToMinutes(endTime);
+
+  // Itera em incrementos de 30 minutos, do início até ANTES do fim
+  // O slot do endTime não é ocupado (ex: bloco 09:00-10:00 ocupa apenas 09:00 e 09:30)
+  for (let minutes = startMinutes; minutes < endMinutes; minutes += SLOT_DURATION_MINUTES) {
+    const slotTime = minutesToTime(minutes);
+    occupiedSlots.push(slotTime);
+  }
+
+  return occupiedSlots;
+}
+
+// ============================================================================
+// FUNÇÃO AUXILIAR: findConsecutiveSlots
+// ============================================================================
+
+/**
+ * Busca uma sequência de slots consecutivos livres dentro de um array de slots.
+ * Verifica se os slots são realmente consecutivos (diferença de 30min entre eles).
+ *
+ * ALGORITMO:
+ * 1. Verifica se há slots suficientes no array
+ * 2. Itera por cada posição possível de início
+ * 3. Para cada posição, verifica se os N próximos slots são consecutivos
+ * 4. Retorna imediatamente ao encontrar sequência válida
+ * 5. Retorna array vazio se não encontrar
+ *
+ * IMPORTANTE: Esta função verifica consecutividade real, não apenas
+ * posição no array. Slots ['06:00', '06:30', '08:00'] não são todos
+ * consecutivos porque há um gap entre '06:30' e '08:00'.
+ *
+ * @param freeSlots - Array de slots livres disponíveis
+ * @param slotsNeeded - Quantidade de slots consecutivos necessários
+ * @returns Array com os slots consecutivos encontrados, ou array vazio se não houver
+ *
+ * @example
+ * // Slots todos consecutivos
+ * findConsecutiveSlots(['06:00', '06:30', '07:00', '07:30'], 2)
+ * // Retorna: ['06:00', '06:30']
+ *
+ * @example
+ * // Slots com gap - precisa de 3 consecutivos
+ * findConsecutiveSlots(['06:00', '06:30', '08:00', '08:30', '09:00'], 3)
+ * // Retorna: ['08:00', '08:30', '09:00'] (os primeiros 2 não servem pois há gap)
+ *
+ * @example
+ * // Não há slots suficientes consecutivos
+ * findConsecutiveSlots(['06:00', '08:00', '10:00'], 2)
+ * // Retorna: [] (nenhum par é consecutivo)
+ */
+export function findConsecutiveSlots(freeSlots: string[], slotsNeeded: number): string[] {
+  // Se não há slots suficientes no total, retorna vazio
+  if (freeSlots.length < slotsNeeded) {
+    return [];
+  }
+
+  // Tenta encontrar sequência consecutiva começando de cada posição
+  for (let startIdx = 0; startIdx <= freeSlots.length - slotsNeeded; startIdx++) {
+    // Assume que a sequência é válida até provar o contrário
+    let isConsecutive = true;
+
+    // Verifica se os próximos 'slotsNeeded' slots são realmente consecutivos
+    for (let i = 0; i < slotsNeeded - 1; i++) {
+      const currentSlotMinutes = timeToMinutes(freeSlots[startIdx + i]);
+      const nextSlotMinutes = timeToMinutes(freeSlots[startIdx + i + 1]);
+
+      // Slots consecutivos devem ter exatamente 30 minutos de diferença
+      // Exemplo válido: '09:00' (540) e '09:30' (570) = diferença de 30 ✓
+      // Exemplo inválido: '09:00' (540) e '10:00' (600) = diferença de 60 ✗
+      if (nextSlotMinutes - currentSlotMinutes !== SLOT_DURATION_MINUTES) {
+        isConsecutive = false;
+        break;
+      }
+    }
+
+    // Se encontrou sequência válida, retorna os slots
+    if (isConsecutive) {
+      return freeSlots.slice(startIdx, startIdx + slotsNeeded);
+    }
+  }
+
+  // Não encontrou sequência consecutiva suficiente
+  return [];
+}
+
+// ============================================================================
+// FUNÇÃO AUXILIAR: calculateEndTime
+// ============================================================================
+
+/**
+ * Calcula o horário de término baseado no horário de início e duração em minutos.
+ *
+ * @param startTime - Horário de início no formato "HH:mm"
+ * @param durationMinutes - Duração em minutos
+ * @returns Horário de término no formato "HH:mm"
+ *
+ * @example
+ * calculateEndTime("09:00", 30)  // "09:30"
+ * calculateEndTime("09:00", 60)  // "10:00"
+ * calculateEndTime("09:00", 90)  // "10:30"
+ * calculateEndTime("22:00", 60)  // "23:00"
+ */
+export function calculateEndTime(startTime: string, durationMinutes: number): string {
+  const startMinutes = timeToMinutes(startTime);
+  const endMinutes = startMinutes + durationMinutes;
+  return minutesToTime(endMinutes);
+}
+
+// ============================================================================
+// FUNÇÃO AUXILIAR: getDateForDay
 // ============================================================================
 
 /**
  * Calcula a data específica para um dia da semana a partir da data de início.
  * Assume que weekStartDate é um domingo (dia 0 da semana).
  *
+ * CÁLCULO:
+ * 1. Cria cópia da data de início para não modificar o original
+ * 2. Adiciona o número de dias correspondente ao dayOfWeek
+ * 3. Retorna no formato ISO YYYY-MM-DD
+ *
  * @param weekStartDate - Data de início da semana (deve ser domingo)
  * @param dayOfWeek - Dia da semana desejado (0 = domingo, 6 = sábado)
- * @returns Data no formato ISO "YYYY-MM-DD"
+ * @returns Data no formato "YYYY-MM-DD"
  *
  * @example
  * // Se weekStartDate é 2026-01-18 (domingo)
  * getDateForDay(new Date('2026-01-18'), 0) // "2026-01-18" (domingo)
  * getDateForDay(new Date('2026-01-18'), 1) // "2026-01-19" (segunda)
+ * getDateForDay(new Date('2026-01-18'), 5) // "2026-01-23" (sexta)
  * getDateForDay(new Date('2026-01-18'), 6) // "2026-01-24" (sábado)
  */
 export function getDateForDay(weekStartDate: Date, dayOfWeek: number): string {
@@ -189,234 +329,82 @@ export function getDateForDay(weekStartDate: Date, dayOfWeek: number): string {
   const targetDate = new Date(weekStartDate);
 
   // Adiciona o número de dias correspondente ao dia da semana
+  // dayOfWeek 0 = domingo (mesmo dia), dayOfWeek 1 = segunda (+1 dia), etc.
   targetDate.setDate(targetDate.getDate() + dayOfWeek);
 
-  // Retorna apenas a parte da data (YYYY-MM-DD)
+  // Retorna apenas a parte da data no formato YYYY-MM-DD
   return targetDate.toISOString().split('T')[0];
 }
 
 // ============================================================================
-// FUNÇÃO: markOccupiedSlots
+// FUNÇÃO AUXILIAR: sortTasksByPriority
 // ============================================================================
 
 /**
- * Remove slots ocupados pelos blocos fixos da estrutura de slots disponíveis.
- * Modifica o weekSlots removendo os horários que conflitam com fixedBlocks.
+ * Filtra tarefas não completadas e ordena por prioridade de agendamento.
  *
- * @param weekSlots - Estrutura de slots da semana (será modificada)
- * @param fixedBlocks - Lista de blocos de tempo fixos (trabalho, aulas, etc.)
- * @param weekStartDate - Data de início da semana para validação de blocos
+ * FILTRO:
+ * - Remove tarefas com status === TaskStatus.COMPLETED
+ * - Remove tarefas com estimatedMinutes <= 0 (sem duração válida)
  *
- * Processo para cada bloco fixo:
- * 1. Verifica se o bloco é válido para a semana atual (validFrom/validUntil)
- * 2. Identifica quais slots estão dentro do intervalo do bloco
- * 3. Remove esses slots do array de slots disponíveis do dia
- *
- * @example
- * // Bloco de trabalho das 09:00 às 12:00 na segunda-feira
- * // Remove os slots: '09:00', '09:30', '10:00', '10:30', '11:00', '11:30'
- */
-export function markOccupiedSlots(
-  weekSlots: WeekSlots,
-  fixedBlocks: TimeBlock[],
-  weekStartDate: Date
-): void {
-  for (const block of fixedBlocks) {
-    const dayOfWeek = block.dayOfWeek;
-    const dateForDay = getDateForDay(weekStartDate, dayOfWeek);
-
-    // ========================================================================
-    // Validação de datas do bloco recorrente
-    // ========================================================================
-
-    // Se o bloco tem validFrom, verifica se a data do dia é >= validFrom
-    if (block.validFrom) {
-      const fromDate = new Date(block.validFrom);
-      const checkDate = new Date(dateForDay);
-      if (checkDate < fromDate) {
-        // Bloco ainda não começou, pula
-        continue;
-      }
-    }
-
-    // Se o bloco tem validUntil, verifica se a data do dia é <= validUntil
-    if (block.validUntil) {
-      const untilDate = new Date(block.validUntil);
-      const checkDate = new Date(dateForDay);
-      if (checkDate > untilDate) {
-        // Bloco já expirou, pula
-        continue;
-      }
-    }
-
-    // ========================================================================
-    // Remoção dos slots ocupados
-    // ========================================================================
-
-    // Converte horários do bloco para minutos para facilitar comparação
-    const blockStartMinutes = timeToMinutes(block.startTime);
-    const blockEndMinutes = timeToMinutes(block.endTime);
-
-    // Filtra o array de slots, mantendo apenas os que NÃO conflitam com o bloco
-    // Um slot conflita se seu horário está dentro do intervalo do bloco
-    weekSlots[dayOfWeek] = weekSlots[dayOfWeek].filter((slotTime) => {
-      const slotMinutes = timeToMinutes(slotTime);
-
-      // Slot está ocupado se: slotMinutes >= blockStart E slotMinutes < blockEnd
-      // Exemplo: bloco 09:00-12:00, slot 09:00 está ocupado (540 >= 540 && 540 < 720)
-      // Exemplo: bloco 09:00-12:00, slot 12:00 NÃO está ocupado (720 >= 540 && 720 < 720 = false)
-      const isOccupied = slotMinutes >= blockStartMinutes && slotMinutes < blockEndMinutes;
-
-      // Retorna true para MANTER o slot (ou seja, quando NÃO está ocupado)
-      return !isOccupied;
-    });
-  }
-}
-
-// ============================================================================
-// FUNÇÃO: sortTasksByPriority
-// ============================================================================
-
-/**
- * Filtra tarefas pendentes e ordena por prioridade de agendamento.
- *
- * @param tasks - Lista de todas as tarefas do usuário
- * @returns Lista filtrada e ordenada de tarefas pendentes
- *
- * Critérios de filtro:
- * - Remove tarefas com status COMPLETED (já concluídas)
- * - Remove tarefas com status CANCELLED (canceladas)
- * - Remove tarefas sem tempo estimado (estimatedMinutes <= 0)
- *
- * Critérios de ordenação (nesta ordem de prioridade):
- * 1. priority DESC - Tarefas HIGH (2) vêm antes de MEDIUM (1) e LOW (0)
- * 2. deadline ASC - Deadlines mais próximos vêm primeiro
- * 3. estimatedMinutes ASC - Tarefas mais curtas vêm primeiro (quick wins)
+ * ORDENAÇÃO (nesta ordem de prioridade):
+ * 1. priority DESC - Alta (2) > Média (1) > Baixa (0)
+ * 2. deadline ASC - Deadlines mais próximos primeiro
+ * 3. estimatedMinutes ASC - Tarefas mais curtas primeiro (quick wins)
  *
  * A ordenação tripla garante que:
  * - Tarefas urgentes e importantes são agendadas primeiro
  * - Em caso de mesma prioridade, as mais urgentes (deadline) têm preferência
  * - Em caso de mesma prioridade e deadline, as mais rápidas são feitas primeiro
  *
+ * @param tasks - Lista de todas as tarefas do usuário
+ * @returns Lista filtrada e ordenada de tarefas pendentes
+ *
  * @example
  * const tasks = [
- *   { priority: LOW, deadline: '2026-01-25', estimatedMinutes: 30 },
- *   { priority: HIGH, deadline: '2026-01-20', estimatedMinutes: 60 },
- *   { priority: HIGH, deadline: '2026-01-20', estimatedMinutes: 30 },
+ *   { priority: 0, deadline: '2026-01-25', estimatedMinutes: 30 }, // LOW
+ *   { priority: 2, deadline: '2026-01-20', estimatedMinutes: 60 }, // HIGH
+ *   { priority: 2, deadline: '2026-01-20', estimatedMinutes: 30 }, // HIGH
  * ];
+ * sortTasksByPriority(tasks);
  * // Resultado: [HIGH/20/30min, HIGH/20/60min, LOW/25/30min]
  */
-export function sortTasksByPriority(tasks: Task[]): Task[] {
+function sortTasksByPriority(tasks: Task[]): Task[] {
   return tasks
     // ========================================================================
-    // Etapa 1: Filtrar tarefas elegíveis para agendamento
+    // ETAPA 1: Filtrar tarefas elegíveis para agendamento
     // ========================================================================
     .filter((task) => {
-      // Apenas tarefas PENDING ou IN_PROGRESS podem ser agendadas
+      // Exclui tarefas já completadas
       const isNotCompleted = task.status !== TaskStatus.COMPLETED;
-      const isNotCancelled = task.status !== TaskStatus.CANCELLED;
 
-      // Tarefa precisa ter tempo estimado válido
+      // Tarefa precisa ter tempo estimado válido (maior que zero)
       const hasValidDuration = task.estimatedMinutes > 0;
 
-      return isNotCompleted && isNotCancelled && hasValidDuration;
+      return isNotCompleted && hasValidDuration;
     })
     // ========================================================================
-    // Etapa 2: Ordenar por múltiplos critérios
+    // ETAPA 2: Ordenar por múltiplos critérios
     // ========================================================================
     .sort((a, b) => {
-      // Critério 1: Prioridade (HIGH = 2, MEDIUM = 1, LOW = 0)
-      // Subtração b - a para ordem decrescente (HIGH primeiro)
+      // CRITÉRIO 1: Prioridade (HIGH = 2, MEDIUM = 1, LOW = 0)
+      // Subtração b - a para ordem DECRESCENTE (HIGH primeiro)
       if (b.priority !== a.priority) {
         return b.priority - a.priority;
       }
 
-      // Critério 2: Deadline (mais cedo primeiro)
-      // Comparação de strings ISO funciona para ordenação cronológica
+      // CRITÉRIO 2: Deadline (mais cedo primeiro)
+      // Converte string para Date e compara timestamps
       const deadlineA = new Date(a.deadline).getTime();
       const deadlineB = new Date(b.deadline).getTime();
       if (deadlineA !== deadlineB) {
-        return deadlineA - deadlineB; // Ordem crescente (mais cedo primeiro)
+        return deadlineA - deadlineB; // Ordem CRESCENTE (mais cedo primeiro)
       }
 
-      // Critério 3: Duração estimada (mais curto primeiro - "quick wins")
-      // Tarefas rápidas são feitas primeiro quando prioridade e deadline iguais
-      return a.estimatedMinutes - b.estimatedMinutes; // Ordem crescente
+      // CRITÉRIO 3: Duração estimada (mais curto primeiro - "quick wins")
+      // Tarefas rápidas são priorizadas quando prioridade e deadline são iguais
+      return a.estimatedMinutes - b.estimatedMinutes; // Ordem CRESCENTE
     });
-}
-
-// ============================================================================
-// FUNÇÃO: findConsecutiveSlots
-// ============================================================================
-
-/**
- * Busca uma sequência de slots consecutivos livres em qualquer dia da semana.
- * Procura dia a dia até encontrar espaço suficiente para a tarefa.
- *
- * @param weekSlots - Estrutura de slots disponíveis da semana
- * @param slotsNeeded - Quantidade de slots consecutivos necessários
- * @returns Objeto com informações dos slots encontrados, ou null se não houver espaço
- *
- * Algoritmo:
- * 1. Itera por cada dia da semana (começando no domingo)
- * 2. Para cada dia, percorre os slots disponíveis
- * 3. Verifica se há slots suficientes a partir da posição atual
- * 4. Valida que os slots são realmente consecutivos (diferença de 30min)
- * 5. Retorna imediatamente ao encontrar a primeira sequência válida
- *
- * A busca "greedy" (gulosa) garante que as tarefas mais prioritárias
- * peguem os primeiros horários disponíveis da semana.
- *
- * @example
- * // Precisa de 3 slots (90 minutos)
- * // Slots disponíveis no dia 1: ['06:00', '06:30', '08:00', '08:30', '09:00']
- * // Retorna: { dayOfWeek: 1, startIndex: 2, slots: ['08:00', '08:30', '09:00'] }
- * // Note que '06:00', '06:30' não servem pois precisaria de '07:00' que não existe
- */
-export function findConsecutiveSlots(
-  weekSlots: WeekSlots,
-  slotsNeeded: number
-): ConsecutiveSlotsResult | null {
-  // Percorre cada dia da semana
-  for (let day = 0; day < DAYS_IN_WEEK; day++) {
-    const daySlots = weekSlots[day];
-
-    // Se o dia não tem slots suficientes, pula para o próximo
-    if (daySlots.length < slotsNeeded) {
-      continue;
-    }
-
-    // Tenta encontrar sequência consecutiva começando de cada posição
-    for (let startIdx = 0; startIdx <= daySlots.length - slotsNeeded; startIdx++) {
-      // Verifica se os próximos 'slotsNeeded' slots são realmente consecutivos
-      let isConsecutive = true;
-
-      for (let i = 0; i < slotsNeeded - 1; i++) {
-        const currentSlotMinutes = timeToMinutes(daySlots[startIdx + i]);
-        const nextSlotMinutes = timeToMinutes(daySlots[startIdx + i + 1]);
-
-        // Slots consecutivos devem ter exatamente 30 minutos de diferença
-        // Exemplo: '09:00' (540) e '09:30' (570) = diferença de 30 OK
-        // Exemplo: '09:00' (540) e '10:00' (600) = diferença de 60 FALHA
-        if (nextSlotMinutes - currentSlotMinutes !== SLOT_DURATION_MINUTES) {
-          isConsecutive = false;
-          break;
-        }
-      }
-
-      // Se encontrou sequência válida, retorna imediatamente
-      if (isConsecutive) {
-        return {
-          dayOfWeek: day,
-          startIndex: startIdx,
-          slots: daySlots.slice(startIdx, startIdx + slotsNeeded),
-        };
-      }
-    }
-  }
-
-  // Não encontrou espaço em nenhum dia
-  return null;
 }
 
 // ============================================================================
@@ -429,61 +417,65 @@ export function findConsecutiveSlots(
  * Distribui tarefas pendentes nos horários livres da semana, respeitando
  * os compromissos fixos e priorizando por urgência/importância.
  *
- * @param fixedBlocks - Lista de blocos de tempo fixos (trabalho, aulas, compromissos)
- * @param tasks - Lista de todas as tarefas do usuário
- * @param weekStartDate - Data de início da semana (deve ser domingo)
- * @returns Lista de tarefas agendadas com horários específicos
- *
  * =============================================================================
  * ALGORITMO DETALHADO
  * =============================================================================
  *
- * PASSO 1: Criar estrutura de slots disponíveis
- * - Gera array de 7 dias com slots de 30min cada (06:00 às 22:30)
- * - Total: 7 dias × 34 slots = 238 slots disponíveis inicialmente
+ * PASSO 1: Criar grid de slots da semana
+ * - Chama createWeekSlots() para criar string[][] com 7 dias
+ * - Cada dia tem 34 slots de 30min: ['06:00', '06:30', ..., '22:30']
  *
- * PASSO 2: Marcar slots ocupados
- * - Para cada bloco fixo, remove os slots correspondentes do array
- * - Respeita validFrom/validUntil para blocos com período de validade
+ * PASSO 2: Remover slots ocupados pelos blocos fixos
+ * - Para cada fixedBlock:
+ *   a. Obtém o dayOfWeek do bloco
+ *   b. Chama getOccupiedSlots(startTime, endTime) para gerar lista de slots ocupados
+ *   c. Remove esses slots do array do dia correspondente
  *
- * PASSO 3: Ordenar tarefas por prioridade
- * - Filtra: remove COMPLETED e CANCELLED
- * - Ordena: priority DESC > deadline ASC > estimatedMinutes ASC
+ * PASSO 3: Filtrar e ordenar tarefas
+ * - Filtra: remove tarefas com status === COMPLETED
+ * - Ordena por: priority DESC, deadline ASC, estimatedMinutes ASC
  *
- * PASSO 4: Alocar tarefas (algoritmo guloso)
- * - Para cada tarefa na ordem de prioridade:
- *   a. Calcula slots necessários: ceil(estimatedMinutes / 30)
- *   b. Busca primeira sequência de slots consecutivos livres
- *   c. Se encontrar: cria ScheduledTask e remove slots do pool
- *   d. Se não encontrar: tarefa não é agendada (log de warning)
+ * PASSO 4: Alocar cada tarefa (algoritmo guloso)
+ * - Para cada tarefa ordenada:
+ *   a. Calcula slots necessários: Math.ceil(estimatedMinutes / 30)
+ *   b. Itera pelos 7 dias procurando sequência de slots livres consecutivos
+ *   c. Usa findConsecutiveSlots() para encontrar sequência válida
+ *   d. Quando encontra:
+ *      - Cria ScheduledTask com id único (crypto.randomUUID ou Math.random)
+ *      - Define taskId, task (cópia completa), dayOfWeek, startTime, endTime, date
+ *      - Adiciona ao array scheduledTasks
+ *      - Remove slots usados do array do dia
+ *      - Faz break para ir para próxima tarefa
  *
- * PASSO 5: Retornar lista de agendamentos
- * - Cada ScheduledTask contém: id, taskId, task, dayOfWeek, startTime, endTime, date
+ * PASSO 5: Retornar scheduledTasks
  *
  * =============================================================================
- * LIMITAÇÕES E CONSIDERAÇÕES
+ * LIMITAÇÕES
  * =============================================================================
- *
  * - Algoritmo guloso: pode não encontrar solução ótima global
- * - Não faz backtracking: se uma alocação impedir outras, não tenta reorganizar
- * - Não considera preferências de horário do usuário
+ * - Não faz backtracking: se uma alocação impedir outras, não reorganiza
  * - Tarefas muito longas podem não caber em nenhum dia
  * - Não fragmenta tarefas: cada tarefa deve caber em bloco contínuo
+ *
+ * @param fixedBlocks - Lista de blocos de tempo fixos (trabalho, aulas, compromissos)
+ * @param tasks - Lista de todas as tarefas do usuário
+ * @param weekStartDate - Data de início da semana (deve ser domingo)
+ * @returns Array de ScheduledTask com tarefas agendadas
  *
  * @example
  * const fixedBlocks = [
  *   { dayOfWeek: 1, startTime: '09:00', endTime: '17:00', title: 'Trabalho', ... }
  * ];
  * const tasks = [
- *   { id: 't1', title: 'Estudar', estimatedMinutes: 60, priority: HIGH, ... },
- *   { id: 't2', title: 'Exercício', estimatedMinutes: 30, priority: MEDIUM, ... }
+ *   { id: 't1', title: 'Estudar', estimatedMinutes: 60, priority: 2, status: 0, ... },
+ *   { id: 't2', title: 'Exercício', estimatedMinutes: 30, priority: 1, status: 0, ... }
  * ];
  * const weekStart = new Date('2026-01-18'); // Domingo
  *
  * const scheduled = scheduleTasksInWeek(fixedBlocks, tasks, weekStart);
  * // [
- * //   { id: 'sched_...', taskId: 't1', dayOfWeek: 0, startTime: '06:00', endTime: '07:00', ... },
- * //   { id: 'sched_...', taskId: 't2', dayOfWeek: 0, startTime: '07:00', endTime: '07:30', ... }
+ * //   { id: 'uuid...', taskId: 't1', task: {...}, dayOfWeek: 0, startTime: '06:00', endTime: '07:00', date: '2026-01-18' },
+ * //   { id: 'uuid...', taskId: 't2', task: {...}, dayOfWeek: 0, startTime: '07:00', endTime: '07:30', date: '2026-01-18' }
  * // ]
  */
 export function scheduleTasksInWeek(
@@ -492,19 +484,32 @@ export function scheduleTasksInWeek(
   weekStartDate: Date
 ): ScheduledTask[] {
   // ===========================================================================
-  // PASSO 1: Criar estrutura de slots disponíveis para a semana
+  // PASSO 1: Criar grid de slots da semana
   // ===========================================================================
-  // Gera array de horários para cada dia: ['06:00', '06:30', ..., '22:30']
-  const weekSlots = createWeekSlots();
+  // Cria array de 7 dias, cada dia com 34 slots de 30min
+  // weekSlots[0] = domingo, weekSlots[1] = segunda, ..., weekSlots[6] = sábado
+  const weekSlots: string[][] = createWeekSlots();
 
   // ===========================================================================
   // PASSO 2: Remover slots ocupados pelos blocos fixos
   // ===========================================================================
-  // Modifica weekSlots in-place, removendo horários conflitantes
-  markOccupiedSlots(weekSlots, fixedBlocks, weekStartDate);
+  // Para cada bloco fixo, remove os slots correspondentes do dia
+  for (const block of fixedBlocks) {
+    const dayOfWeek = block.dayOfWeek;
+
+    // Gera array de slots que este bloco ocupa
+    // Ex: bloco 09:00-12:00 gera ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
+    const occupiedSlots = getOccupiedSlots(block.startTime, block.endTime);
+
+    // Remove cada slot ocupado do array de slots livres do dia
+    // Usa filter para manter apenas slots que NÃO estão na lista de ocupados
+    weekSlots[dayOfWeek] = weekSlots[dayOfWeek].filter(
+      (slot) => !occupiedSlots.includes(slot)
+    );
+  }
 
   // ===========================================================================
-  // PASSO 3: Filtrar e ordenar tarefas por prioridade de agendamento
+  // PASSO 3: Filtrar e ordenar tarefas por prioridade
   // ===========================================================================
   // Resultado: array ordenado por prioridade DESC, deadline ASC, duração ASC
   const sortedTasks = sortTasksByPriority(tasks);
@@ -514,6 +519,7 @@ export function scheduleTasksInWeek(
   // ===========================================================================
   const scheduledTasks: ScheduledTask[] = [];
 
+  // Itera por cada tarefa na ordem de prioridade
   for (const task of sortedTasks) {
     // -------------------------------------------------------------------------
     // 4.1: Calcular quantidade de slots necessários
@@ -522,56 +528,81 @@ export function scheduleTasksInWeek(
     const slotsNeeded = Math.ceil(task.estimatedMinutes / SLOT_DURATION_MINUTES);
 
     // -------------------------------------------------------------------------
-    // 4.2: Buscar sequência de slots consecutivos livres
+    // 4.2: Procurar sequência de slots livres em qualquer dia da semana
     // -------------------------------------------------------------------------
-    const availableSlots = findConsecutiveSlots(weekSlots, slotsNeeded);
+    // Variável para controlar se encontrou slot
+    let foundSlot = false;
 
-    // -------------------------------------------------------------------------
-    // 4.3: Se não encontrou espaço, pula para próxima tarefa
-    // -------------------------------------------------------------------------
-    if (!availableSlots) {
+    // Itera pelos 7 dias da semana procurando espaço
+    for (let dayOfWeek = 0; dayOfWeek < DAYS_IN_WEEK; dayOfWeek++) {
+      // Busca sequência de slots consecutivos livres neste dia
+      const consecutiveSlots = findConsecutiveSlots(weekSlots[dayOfWeek], slotsNeeded);
+
+      // Se encontrou slots suficientes consecutivos
+      if (consecutiveSlots.length > 0) {
+        // ---------------------------------------------------------------------
+        // 4.3: Criar objeto ScheduledTask
+        // ---------------------------------------------------------------------
+
+        // Horário de início é o primeiro slot da sequência
+        const startTime = consecutiveSlots[0];
+
+        // Calcula horário de término somando 30min ao último slot
+        // Alternativa: usar a função calculateEndTime
+        const durationMinutes = slotsNeeded * SLOT_DURATION_MINUTES;
+        const endTime = calculateEndTime(startTime, durationMinutes);
+
+        // Calcula a data específica deste dia na semana (YYYY-MM-DD)
+        const date = getDateForDay(weekStartDate, dayOfWeek);
+
+        // Monta o objeto ScheduledTask completo
+        const scheduledTask: ScheduledTask = {
+          // ID único gerado por crypto.randomUUID ou Math.random
+          id: generateUniqueId(),
+
+          // ID da tarefa original
+          taskId: task.id,
+
+          // Cópia completa do objeto task (spread para criar cópia)
+          task: { ...task },
+
+          // Dia da semana onde foi agendado (0-6)
+          dayOfWeek: dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6,
+
+          // Horários de início e fim
+          startTime,
+          endTime,
+
+          // Data no formato YYYY-MM-DD
+          date,
+        };
+
+        // Adiciona ao array de resultado
+        scheduledTasks.push(scheduledTask);
+
+        // ---------------------------------------------------------------------
+        // 4.4: Remover slots usados do pool de disponibilidade
+        // ---------------------------------------------------------------------
+        // Remove os slots alocados para que não sejam usados por outras tarefas
+        weekSlots[dayOfWeek] = weekSlots[dayOfWeek].filter(
+          (slot) => !consecutiveSlots.includes(slot)
+        );
+
+        // ---------------------------------------------------------------------
+        // 4.5: Break para ir para próxima tarefa
+        // ---------------------------------------------------------------------
+        foundSlot = true;
+        break;
+      }
+    }
+
+    // Log de warning se não encontrou espaço para a tarefa
+    if (!foundSlot) {
       console.warn(
         `[Scheduler] Sem horário disponível para tarefa "${task.title}" ` +
         `(${task.estimatedMinutes}min = ${slotsNeeded} slots)`
       );
-      continue;
     }
-
-    // -------------------------------------------------------------------------
-    // 4.4: Criar registro de tarefa agendada
-    // -------------------------------------------------------------------------
-    const { dayOfWeek, startIndex, slots } = availableSlots;
-
-    // Horário de início é o primeiro slot alocado
-    const startTime = slots[0];
-
-    // Horário de término é 30min após o último slot
-    // Exemplo: último slot '09:30' -> endTime '10:00'
-    const lastSlotMinutes = timeToMinutes(slots[slots.length - 1]);
-    const endTime = minutesToTime(lastSlotMinutes + SLOT_DURATION_MINUTES);
-
-    // Data específica do dia na semana
-    const date = getDateForDay(weekStartDate, dayOfWeek);
-
-    // Monta o objeto ScheduledTask
-    const scheduledTask: ScheduledTask = {
-      id: generateScheduleId(),
-      taskId: task.id,
-      task: task, // Referência completa à tarefa original
-      dayOfWeek: dayOfWeek as 0 | 1 | 2 | 3 | 4 | 5 | 6,
-      startTime,
-      endTime,
-      date,
-    };
-
-    scheduledTasks.push(scheduledTask);
-
-    // -------------------------------------------------------------------------
-    // 4.5: Remover slots usados do pool de disponibilidade
-    // -------------------------------------------------------------------------
-    // Remove os slots alocados para que não sejam usados por outras tarefas
-    // Usa splice para remover diretamente do array (mais eficiente)
-    weekSlots[dayOfWeek].splice(startIndex, slotsNeeded);
   }
 
   // ===========================================================================
@@ -615,39 +646,29 @@ export function getWeekStartDate(date: Date): Date {
  * @param fixedBlocks - Lista de blocos fixos
  * @param weekStartDate - Data de início da semana
  * @returns Objeto com estatísticas de disponibilidade
- *
- * @example
- * const stats = getWeekAvailability(blocks, weekStart);
- * console.log(`${stats.freeMinutes} minutos livres (${100 - stats.occupancyPercentage}%)`);
  */
 export function getWeekAvailability(
   fixedBlocks: TimeBlock[],
   weekStartDate: Date
 ): {
-  /** Total de slots na semana (238 = 7 dias × 34 slots) */
   totalSlots: number;
-  /** Slots ocupados por blocos fixos */
   occupiedSlots: number;
-  /** Slots disponíveis para tarefas */
   freeSlots: number;
-  /** Minutos livres totais */
   freeMinutes: number;
-  /** Percentual de ocupação (0-100) */
   occupancyPercentage: number;
 } {
   const weekSlots = createWeekSlots();
   const totalSlots = DAYS_IN_WEEK * SLOTS_PER_DAY;
 
-  // Conta slots antes de marcar ocupados
-  let initialSlots = 0;
-  for (let day = 0; day < DAYS_IN_WEEK; day++) {
-    initialSlots += weekSlots[day].length;
+  // Remove slots ocupados
+  for (const block of fixedBlocks) {
+    const occupiedSlots = getOccupiedSlots(block.startTime, block.endTime);
+    weekSlots[block.dayOfWeek] = weekSlots[block.dayOfWeek].filter(
+      (slot) => !occupiedSlots.includes(slot)
+    );
   }
 
-  // Marca ocupados
-  markOccupiedSlots(weekSlots, fixedBlocks, weekStartDate);
-
-  // Conta slots após marcar ocupados
+  // Conta slots livres restantes
   let freeSlots = 0;
   for (let day = 0; day < DAYS_IN_WEEK; day++) {
     freeSlots += weekSlots[day].length;
@@ -662,23 +683,4 @@ export function getWeekAvailability(
     freeMinutes: freeSlots * SLOT_DURATION_MINUTES,
     occupancyPercentage: Math.round((occupiedSlots / totalSlots) * 100),
   };
-}
-
-/**
- * Obtém os slots disponíveis para um dia específico.
- * Útil para visualização na interface.
- *
- * @param fixedBlocks - Lista de blocos fixos
- * @param weekStartDate - Data de início da semana
- * @param dayOfWeek - Dia da semana (0-6)
- * @returns Array de horários disponíveis no formato "HH:mm"
- */
-export function getAvailableSlotsForDay(
-  fixedBlocks: TimeBlock[],
-  weekStartDate: Date,
-  dayOfWeek: number
-): string[] {
-  const weekSlots = createWeekSlots();
-  markOccupiedSlots(weekSlots, fixedBlocks, weekStartDate);
-  return weekSlots[dayOfWeek] || [];
 }
