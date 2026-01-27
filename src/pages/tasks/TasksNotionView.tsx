@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { AppSidebar } from '@/components/app-sidebar';
+import PomodoroTimer from '@/components/timer/PomodoroTimer';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Badge } from '@/components/ui/badge';
@@ -120,6 +122,8 @@ const createEmptyTask = (): Task => ({
 
 export default function TasksNotionView() {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const [timerOpen, setTimerOpen] = useState(false);
+  const [selectedTaskForTimer, setSelectedTaskForTimer] = useState<Task | null>(null);
 
   // Salvar automaticamente quando as tarefas mudam
   useEffect(() => {
@@ -369,6 +373,10 @@ export default function TasksNotionView() {
                               size="icon"
                               className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/30"
                               title="Iniciar Timer Pomodoro"
+                              onClick={() => {
+                                setSelectedTaskForTimer(task);
+                                setTimerOpen(true);
+                              }}
                             >
                               <Timer className="h-5 w-5" />
                             </Button>
@@ -449,6 +457,21 @@ export default function TasksNotionView() {
           </div>
         </div>
       </SidebarInset>
+
+      {timerOpen && (
+        <PomodoroTimer
+          open={timerOpen}
+          onClose={() => {
+            setTimerOpen(false);
+            setSelectedTaskForTimer(null);
+          }}
+          taskTitle={selectedTaskForTimer?.title || ''}
+          taskId={selectedTaskForTimer?.id || ''}
+          onComplete={() => {
+            toast.success('Tarefa concluída!');
+          }}
+        />
+      )}
     </SidebarProvider>
   );
 }

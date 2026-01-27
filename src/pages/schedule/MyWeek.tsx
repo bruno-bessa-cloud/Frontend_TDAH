@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
+import PomodoroTimer from '@/components/timer/PomodoroTimer';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -225,6 +226,7 @@ export default function MyWeek() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0); // Para mobile
   const [selectedScheduledTask, setSelectedScheduledTask] = useState<ScheduledTask | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [timerOpen, setTimerOpen] = useState(false);
 
   // Função para reagendar tarefas na semana
   const handleReschedule = useCallback(() => {
@@ -924,6 +926,19 @@ export default function MyWeek() {
             >
               Fechar
             </Button>
+            {selectedScheduledTask?.task.category === TaskCategory.STUDY && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  setTimerOpen(true);
+                }}
+                className="text-amber-600 border-amber-300 hover:bg-amber-50"
+              >
+                <Timer className="h-4 w-4 mr-2" />
+                Iniciar Pomodoro
+              </Button>
+            )}
             <Button
               onClick={handleMarkTaskCompleted}
               className="bg-green-600 hover:bg-green-700 text-white"
@@ -934,6 +949,15 @@ export default function MyWeek() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {timerOpen && (
+        <PomodoroTimer
+          open={timerOpen}
+          onClose={() => setTimerOpen(false)}
+          taskTitle={selectedScheduledTask?.task.title || ''}
+          taskId={selectedScheduledTask?.taskId || ''}
+        />
+      )}
     </SidebarProvider>
   );
 }
